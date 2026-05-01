@@ -1,3 +1,5 @@
+import os
+import sys
 import time
 
 import deglib.builder as builder
@@ -5,6 +7,7 @@ import deglib.distances as dist
 import deglib.graph as graph
 import h5py
 import numpy as np
+import psutil
 from huggingface_hub import hf_hub_download
 
 DATASET_REPO = "sisap-challenges/SISAP2026"
@@ -44,6 +47,12 @@ EDGES_PER_VERTEX = 48
 # Total time:     82.3s
 
 
+def print_memory_usage(label: str = "Memory usage"):
+    process = psutil.Process(os.getpid())
+    mem_info = process.memory_info()
+    print(f"{label}: {mem_info.rss / (1024 * 1024):.2f} MB")
+
+
 def download_dataset() -> str:
     path = hf_hub_download(
         repo_id=DATASET_REPO,
@@ -54,12 +63,16 @@ def download_dataset() -> str:
     return path
 
 
-def build_graph(train_data: np.ndarray) -> graph.SizeBoundedGraph:
+def build_graph(train_data) -> graph.SizeBoundedGraph:
     n = train_data.shape[0]
     dim = train_data.shape[1]
 
+    print_memory_usage("Initial memory")
+
     space = dist.FloatSpace.create(dim, dist.Metric.InnerProduct)
     g = graph.SizeBoundedGraph(n, EDGES_PER_VERTEX, space)
+
+    print_memory_usage("After graph allocation")
 
     b = builder.EvenRegularGraphBuilder(
         g,
@@ -67,9 +80,48 @@ def build_graph(train_data: np.ndarray) -> graph.SizeBoundedGraph:
         extend_k=EDGES_PER_VERTEX,
         extend_eps=0.001,
     )
-    for i in range(n):
-        b.add_entry(i, train_data[i].astype(np.float32))
-    b.build(callback="progress")
+
+    batch_size = 10000
+    for i in range(0, n, batch_size):
+        end = min(i + batch_size, n)
+        batch_features = train_data[i:end].astype(np.float32)
+        batch_labels = np.arange(i, end, dtype=np.uint32)
+        b.add_entry(batch_labels, batch_features)
+        b.build()
+
+        progress = end / n
+        bar_length = 40
+        filled = int(bar_length * progress)
+        bar = "#" * filled + "-" * (bar_length - filled)
+        sys.stdout.write(f"\rBuilding graph: [{bar}] {progress * 100:.1f}% ({end}/{n})")
+        sys.stdout.flush()
+    print()
+    print_memory_usage("After graph build")
+
+    b = builder.EvenRegularGraphBuilder(
+        g,
+        optimization_target=builder.OptimizationTarget.LowLID,
+        extend_k=EDGES_PER_VERTEX,
+        extend_eps=0.001,
+    )
+
+    batch_size = 10000
+    for i in range(0, n, batch_size):
+        end = min(i + batch_size, n)
+        batch_features = train_data[i:end].astype(np.float32)
+        batch_labels = np.arange(i, end, dtype=np.uint32)
+        b.add_entry(batch_labels, batch_features)
+        b.build()
+
+        progress = end / n
+        bar_length = 40
+        filled = int(bar_length * progress)
+        bar = "#" * filled + "-" * (bar_length - filled)
+        sys.stdout.write(f"\rBuilding graph: [{bar}] {progress * 100:.1f}% ({end}/{n})")
+        sys.stdout.flush()
+    print()
+
+    print_memory_usage()
 
     print(f"Graph built: {g.size()} vertices, {EDGES_PER_VERTEX} edges/vertex")
     return g
@@ -151,22 +203,24 @@ def evaluate_recall(indices: np.ndarray, gold_allknn: np.ndarray, k: int) -> flo
 def main() -> None:
     path = download_dataset()
 
-    with h5py.File(path, "r") as f:  # type: ignore[assignment]
-        f: h5py.File  # type: ignore[misc]
-        train = np.array(f["train"], dtype=np.float32)  # type: ignore[index]
-        gold_allknn_raw = np.array(f["allknn"]["knns"], dtype=np.int32)  # type: ignore[index]
-        gold_allknn = gold_allknn_raw - 1  # type: ignore[operator]
+    with h5py.File(path, "r") as f:
+        # Train data is used lazily through the HDF5 dataset object
+        train_data = f["train"]
 
-    print(f"Train data shape: {train.shape}")
-    print(f"Gold allknn shape: {gold_allknn.shape}")
-    print(f"Edges per vertex: {EDGES_PER_VERTEX}, k: {K}")
+        print(f"Train data shape: {train_data.shape}")
+        print(f"Edges per vertex: {EDGES_PER_VERTEX}, k: {K}")
 
-    # Build graph
-    print("\n--- Building graph ---")
-    graph_start = time.perf_counter()
-    g = build_graph(train)
-    build_time = time.perf_counter() - graph_start
-    print(f"Build time: {build_time:.1f}s")
+        # Build graph
+        print("\n--- Building graph ---")
+        graph_start = time.perf_counter()
+        g = build_graph(train_data)
+        build_time = time.perf_counter() - graph_start
+        print(f"Build time: {build_time:.1f}s")
+
+    # Now load gold allknn after the graph is built to save memory
+    with h5py.File(path, "r") as f:
+        gold_allknn_raw = np.array(f["allknn"]["knns"], dtype=np.int32)
+        gold_allknn = gold_allknn_raw - 1
 
     # Retrieve neighbors
     print(f"\n--- Retrieving {K} neighbors per vertex ---")
