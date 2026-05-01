@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+from typing import cast
 
 import deglib.builder as builder
 import deglib.distances as dist
@@ -166,7 +167,7 @@ def main() -> None:
 
     with h5py.File(path, "r") as f:
         # Train data is used lazily through the HDF5 dataset object
-        train_data = f["train"]
+        train_data = cast(h5py.Dataset, f["train"])
 
         print(f"Train data shape: {train_data.shape}")
         print(f"Edges per vertex: {EDGES_PER_VERTEX}, k: {K}")
@@ -180,7 +181,8 @@ def main() -> None:
 
     # Now load gold allknn after the graph is built to save memory
     with h5py.File(path, "r") as f:
-        gold_allknn_raw = np.array(f["allknn"]["knns"], dtype=np.int32)
+        allknn_group = cast(h5py.Group, f["allknn"])
+        gold_allknn_raw = np.array(allknn_group["knns"], dtype=np.int32)
         gold_allknn = gold_allknn_raw - 1
 
     # Retrieve neighbors via explore
