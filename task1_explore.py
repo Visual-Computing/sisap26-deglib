@@ -11,7 +11,8 @@ import psutil
 from huggingface_hub import hf_hub_download
 
 DATASET_REPO = "sisap-challenges/SISAP2026"
-DATASET_FILE = "benchmark-dev-wikipedia-bge-m3-small.h5"
+DATASET_FILE = "benchmark-dev-wikipedia-bge-m3-small.h5"  # small
+# DATASET_FILE = "benchmark-dev-wikipedia-bge-m3.h5" # large
 ALGO_NAME = "deglib_evenregular_M24_LowLID_explore"
 TASK_NAME = "task1"
 K = 15

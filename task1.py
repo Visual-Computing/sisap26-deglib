@@ -11,7 +11,8 @@ import psutil
 from huggingface_hub import hf_hub_download
 
 DATASET_REPO = "sisap-challenges/SISAP2026"
-DATASET_FILE = "benchmark-dev-wikipedia-bge-m3-small.h5"
+DATASET_FILE = "benchmark-dev-wikipedia-bge-m3-small.h5"  # small
+# DATASET_FILE = "benchmark-dev-wikipedia-bge-m3.h5" # large
 ALGO_NAME = "deglib_evenregular_M24_LowLID"
 TASK_NAME = "task1"
 K = 15
@@ -95,33 +96,7 @@ def build_graph(train_data) -> graph.SizeBoundedGraph:
         bar = "#" * filled + "-" * (bar_length - filled)
         sys.stdout.write(f"\rBuilding graph: [{bar}] {progress * 100:.1f}% ({end}/{n})")
         sys.stdout.flush()
-    print()
     print_memory_usage("After graph build")
-
-    b = builder.EvenRegularGraphBuilder(
-        g,
-        optimization_target=builder.OptimizationTarget.LowLID,
-        extend_k=EDGES_PER_VERTEX,
-        extend_eps=0.001,
-    )
-
-    batch_size = 10000
-    for i in range(0, n, batch_size):
-        end = min(i + batch_size, n)
-        batch_features = train_data[i:end].astype(np.float32)
-        batch_labels = np.arange(i, end, dtype=np.uint32)
-        b.add_entry(batch_labels, batch_features)
-        b.build()
-
-        progress = end / n
-        bar_length = 40
-        filled = int(bar_length * progress)
-        bar = "#" * filled + "-" * (bar_length - filled)
-        sys.stdout.write(f"\rBuilding graph: [{bar}] {progress * 100:.1f}% ({end}/{n})")
-        sys.stdout.flush()
-    print()
-
-    print_memory_usage()
 
     print(f"Graph built: {g.size()} vertices, {EDGES_PER_VERTEX} edges/vertex")
     return g
