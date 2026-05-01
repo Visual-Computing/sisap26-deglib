@@ -11,20 +11,30 @@ import psutil
 from huggingface_hub import hf_hub_download
 
 DATASET_REPO = "sisap-challenges/SISAP2026"
-DATASET_FILE = "benchmark-dev-wikipedia-bge-m3-small.h5"  # small
-# DATASET_FILE = "benchmark-dev-wikipedia-bge-m3.h5" # large
+# DATASET_FILE = "benchmark-dev-wikipedia-bge-m3-small.h5"  # small
+DATASET_FILE = "benchmark-dev-wikipedia-bge-m3.h5"  # large
 ALGO_NAME = "deglib_evenregular_M24_LowLID_explore"
 TASK_NAME = "task1"
 K = 15
 EDGES_PER_VERTEX = 32
 MAX_EXPLORE_DISTANCES = 100
 
-# Benchmark results (200K vertices, k=15, EDGES_PER_VERTEX=32, MAX_EXPLORE_DISTANCES=100, LowLID, explore):
+# Benchmark Results
+# =================
+#
+# benchmark-dev-wikipedia-bge-m3-small.h5, k=15, EDGES_PER_VERTEX=32, MAX_EXPLORE_DISTANCES=100, LowLID:
 # Build time:     39.9s
 # Query time:     18.0s
 # Throughput:     11082.5 q/s
 # Recall:         0.7810
 # Total time:     58.0s
+#
+# benchmark-dev-wikipedia-bge-m3.h5, k=15, EDGES_PER_VERTEX=32, MAX_EXPLORE_DISTANCES=100, LowLID:
+# Build time:     692.8s
+# Query time:     358.5s
+# Throughput:     17713.3 q/s
+# Recall:         0.7044
+# Total time:     1051.3s
 
 
 def print_memory_usage(label: str = "Memory usage"):

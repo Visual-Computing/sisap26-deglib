@@ -11,14 +11,17 @@ import psutil
 from huggingface_hub import hf_hub_download
 
 DATASET_REPO = "sisap-challenges/SISAP2026"
-DATASET_FILE = "benchmark-dev-wikipedia-bge-m3-small.h5"  # small
-# DATASET_FILE = "benchmark-dev-wikipedia-bge-m3.h5" # large
+# DATASET_FILE = "benchmark-dev-wikipedia-bge-m3-small.h5"  # small
+DATASET_FILE = "benchmark-dev-wikipedia-bge-m3.h5"  # large
 ALGO_NAME = "deglib_evenregular_M24_LowLID"
 TASK_NAME = "task1"
 K = 15
 EDGES_PER_VERTEX = 48
 
-# Benchmark results (200K vertices, k=15, EDGES_PER_VERTEX=16, LowLID):
+# Benchmark Results
+# =================
+#
+# benchmark-dev-wikipedia-bge-m3-small.h5, k=15, EDGES_PER_VERTEX=16, LowLID:
 # Edges/vertex:   16
 # Build time:     15.2s
 # Query time:     5.7s
@@ -26,26 +29,33 @@ EDGES_PER_VERTEX = 48
 # Recall:         0.4061
 # Total time:     20.8s
 #
-# Benchmark results (200K vertices, k=15, EDGES_PER_VERTEX=24, LowLID):
+# benchmark-dev-wikipedia-bge-m3-small.h5, k=15, EDGES_PER_VERTEX=24, LowLID:
 # Build time:     25.8s
 # Query time:     5.8s
 # Throughput:     34647.9 q/s
 # Recall:         0.5845
 # Total time:     31.6s
 #
-# Benchmark results (200K vertices, k=15, EDGES_PER_VERTEX=32, LowLID):
+# benchmark-dev-wikipedia-bge-m3-small.h5, k=15, EDGES_PER_VERTEX=32, LowLID:
 # Build time:     41.3s
 # Query time:     5.7s
 # Throughput:     35123.1 q/s
 # Recall:         0.6835
 # Total time:     47.0s
 #
-# Benchmark results (200K vertices, k=15, EDGES_PER_VERTEX=48, LowLID):
+# benchmark-dev-wikipedia-bge-m3-small.h5, k=15, EDGES_PER_VERTEX=48, LowLID:
 # Build time:     76.6s
 # Query time:     5.7s
 # Throughput:     35075.8 q/s
 # Recall:         0.7856
 # Total time:     82.3s
+#
+# benchmark-dev-wikipedia-bge-m3.h5, k=15, EDGES_PER_VERTEX=48, LowLID:
+# Build time:     1318.5s
+# Query time:     114.1s
+# Throughput:     55648.0 q/s
+# Recall:         0.7140
+# Total time:     1432.6s
 
 
 def print_memory_usage(label: str = "Memory usage"):
