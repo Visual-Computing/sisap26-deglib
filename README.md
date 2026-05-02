@@ -1,28 +1,60 @@
-# sisap26-deglib
+# SISAP 2026: Wikipedia BGE-M3 Similarity Search
 
-## Setup
+This repository contains implementations for the SISAP 2026 Challenge, focusing on approximate nearest neighbor search (ANN) on the Wikipedia BGE-M3 dataset. It features two primary approaches: **deglib** (Dynamic Exploration Graph Library) and **EVP** (Equi-Voronoi Polytope) Quantisation.
 
-To set up this repository on a new machine, follow these steps:
+## 🚀 Quick Start
 
-1. **Install uv**:
-   Follow the official installation guide at [astral.sh/uv](https://astral.sh/uv).
+### 1. Prerequisites
+Ensure you have `uv` installed. If not, follow the [official installation guide](https://astral.sh/uv).
 
-2. **Clone the repository**:
-   ```bash
-   git clone <repository-url>
-   cd sisap26-deglib
-   ```
-
-3. **Install dependencies**:
-   Run the following command to create a virtual environment and install all dependencies listed in `uv.lock`:
-   ```bash
-   uv sync
-   ```
-
-## Running scripts
-
-You can run the scripts using `uv run`:
-
+### 2. Setup
+Clone the repository and install dependencies:
 ```bash
-uv run python task1.py
+git clone https://github.com/Visual-Computing/sisap26-deglib
+cd sisap26-deglib
+uv sync
 ```
+
+## 🛠 Project Structure
+
+### EVP (Equi-Voronoi Polytope) Quantisation.
+The `evp` module implements a high-performance, bit-packed ternary approximation for inner product similarity.
+- **`evp/`**: Core library containing the `EvpBits` implementation and similarity kernels.
+- **`task1_evp.py`**: Main evaluation script for EVP, computing all-pairs similarities on the Wikipedia dataset.
+- **`tests/evp/`**: Comprehensive test suite for EVP functionality, speed, and accuracy.
+
+### deglib (Dynamic Exploration Graph)
+Graph-based ANN search using the `deglib` library.
+- **`task1_deglib_all.py`**: Benchmarks multiple search methods (search, neighbors, explore) on the deglib graph.
+- **`task1_deglib_explore.py`**: Focused benchmark using the `explore` method.
+- **`task1_deglib_neighbors.py`**: Focused benchmark using graph neighbors.
+
+## 📊 Running Benchmarks
+
+### EVP Benchmark
+To run the EVP similarity search and recall evaluation:
+```bash
+uv run python task1_evp.py
+```
+
+### deglib Benchmarks
+To run the comprehensive deglib benchmark:
+```bash
+uv run python task1_deglib_all.py
+```
+
+## 🧪 Testing
+Run the EVP test suite to verify implementation correctness and performance:
+```bash
+# Core logic and conversion
+uv run python tests/evp/test_evp.py
+
+# Similarity approximation accuracy
+uv run python tests/evp/test_similarity.py
+
+# Performance benchmarking
+uv run python tests/evp/test_speed.py
+```
+
+## 📄 Dataset
+The scripts automatically download the SISAP 2026 Wikipedia dataset from the [Hugging Face Hub](https://huggingface.co/datasets/SISAP-Challenges/SISAP2026). By default, the `small` version is used for development.

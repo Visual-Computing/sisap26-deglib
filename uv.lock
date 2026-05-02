@@ -756,6 +756,7 @@ dependencies = [
     { name = "h5py" },
     { name = "huggingface-hub" },
     { name = "ipykernel" },
+    { name = "numpy" },
 ]
 
 [package.metadata]
@@ -764,6 +765,7 @@ requires-dist = [
     { name = "h5py", specifier = ">=3.16.0" },
     { name = "huggingface-hub", specifier = ">=1.13.0" },
     { name = "ipykernel", specifier = ">=7.2.0" },
+    { name = "numpy" },
 ]
 
 [[package]]
