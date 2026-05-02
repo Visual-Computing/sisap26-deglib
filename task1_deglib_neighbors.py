@@ -9,11 +9,11 @@ import deglib.graph as graph
 import h5py
 import numpy as np
 import psutil
-from huggingface_hub import hf_hub_download
+import cpuinfo
+from utils.data import get_h5_file
 
 DATASET_REPO = "sisap-challenges/SISAP2026"
-# DATASET_FILE = "benchmark-dev-wikipedia-bge-m3-small.h5"  # small
-DATASET_FILE = "benchmark-dev-wikipedia-bge-m3.h5"  # large
+SMALL_DATASET = True
 ALGO_NAME = "deglib_evenregular_M24_LowLID"
 TASK_NAME = "task1"
 K = 15
@@ -65,14 +65,7 @@ def print_memory_usage(label: str = "Memory usage"):
     print(f"{label}: {mem_info.rss / (1024 * 1024):.2f} MB")
 
 
-def download_dataset() -> str:
-    path = hf_hub_download(
-        repo_id=DATASET_REPO,
-        filename=DATASET_FILE,
-        repo_type="dataset",
-    )
-    print(f"Dataset downloaded to: {path}")
-    return path
+
 
 
 def build_graph(train_data) -> graph.SizeBoundedGraph:
@@ -187,7 +180,7 @@ def evaluate_recall(indices: np.ndarray, gold_allknn: np.ndarray, k: int) -> flo
 
 
 def main() -> None:
-    path = download_dataset()
+    path = get_h5_file(is_small=SMALL_DATASET)
 
     with h5py.File(path, "r") as f:
         # Train data is used lazily through the HDF5 dataset object
@@ -222,14 +215,25 @@ def main() -> None:
     save_results(indices, dists, build_time, indices.shape[0] / qps, qps)
 
     # Summary
-    print("\n=== Summary ===")
-    print(f"Algorithm:      {ALGO_NAME}")
-    print(f"Edges/vertex:   {EDGES_PER_VERTEX}")
-    print(f"Build time:     {build_time:.1f}s")
-    print(f"Query time:     {indices.shape[0] / qps:.1f}s")
-    print(f"Throughput:     {qps:.1f} q/s")
-    print(f"Recall:         {recall:.4f}")
-    print(f"Total time:     {build_time + indices.shape[0] / qps:.1f}s")
+    cpu_info = cpuinfo.get_cpu_info()['brand_raw']
+    ram_gb = psutil.virtual_memory().total / (1024**3)
+
+    print("\n" + "="*45)
+    print(f"{'SUMMARY':^45}")
+    print("="*45)
+    print(f"{'Dataset:':<25} {'Small' if SMALL_DATASET else 'Large'} ({g.size():,} elements)")
+    print(f"{'Hardware:':<25} {cpu_info}")
+    print(f"{'RAM:':<25} {ram_gb:.2f} GB")
+    print("-" * 45)
+    print(f"{'Settings:':<25} M={EDGES_PER_VERTEX}")
+    print("-" * 45)
+    print(f"{'Build time:':<25} {build_time:.1f} s")
+    print(f"{'Query time:':<25} {indices.shape[0] / qps:.1f} s")
+    print(f"{'Throughput:':<25} {qps:.1f} q/s")
+    print(f"{'Recall:':<25} {recall:.4f}")
+    print("-" * 45)
+    print(f"{'Total time:':<25} {build_time + indices.shape[0] / qps:.1f} s")
+    print("="*45)
 
 
 if __name__ == "__main__":

@@ -1,14 +1,18 @@
 import time
+import os
 
 import deglib.builder as builder
 import deglib.distances as dist
 import deglib.graph as graph
 import h5py
 import numpy as np
+import psutil
+import cpuinfo
 from huggingface_hub import hf_hub_download
+from utils.data import get_h5_file
 
 DATASET_REPO = "sisap-challenges/SISAP2026"
-DATASET_FILE = "benchmark-dev-wikipedia-bge-m3-small.h5"
+SMALL_DATASET = True
 K: int = 15
 EDGES_PER_VERTEX: int = 16
 
@@ -28,14 +32,7 @@ OPTIMIZATION_TARGET = "low_lid"
 #   Method 4 (graph search with vertex features): Recall=0.8315  QPS=5310
 
 
-def download_dataset() -> str:
-    path = hf_hub_download(
-        repo_id=DATASET_REPO,
-        filename=DATASET_FILE,
-        repo_type="dataset",
-    )
-    print(f"Dataset downloaded to: {path}")
-    return path
+
 
 
 def build_graph(train_data: np.ndarray) -> graph.SizeBoundedGraph:
@@ -196,7 +193,7 @@ def method_explore(
 
 
 def main() -> None:
-    path: str = download_dataset()
+    path: str = get_h5_file(is_small=SMALL_DATASET)
 
     with h5py.File(path, "r") as f:
         train_h5: h5py.Dataset = f["train"]  # type: ignore[assignment]
@@ -240,6 +237,31 @@ def main() -> None:
     print(f"\n--- Method 4: graph search with vertex features (k={K}) ---")
     recall4, qps4, retrieved4 = method_search_allknn(g, train, gold_allknn_0based)
     print(f"  Recall={recall4:.4f}  QPS={qps4:.1f}")
+
+    # Summary
+    cpu_info = cpuinfo.get_cpu_info()['brand_raw']
+    ram_gb = psutil.virtual_memory().total / (1024**3)
+
+    print("\n" + "="*45)
+    print(f"{'SUMMARY':^45}")
+    print("="*45)
+    print(f"{'Dataset:':<25} {'Small' if SMALL_DATASET else 'Large'} ({train.shape[0]:,} elements)")
+    print(f"{'Hardware:':<25} {cpu_info}")
+    print(f"{'RAM:':<25} {ram_gb:.2f} GB")
+    print("-" * 45)
+    print(f"{'Settings:':<25} M={EDGES_PER_VERTEX}, Opt={OPTIMIZATION_TARGET}")
+    print("-" * 45)
+    print(f"{'Method 1 Recall:':<25} {recall1:.4f}")
+    print(f"{'Method 1 QPS:':<25} {qps1:.1f}")
+    print(f"{'Method 2 Recall:':<25} {recall2:.4f}")
+    print(f"{'Method 2 QPS:':<25} {qps2:.1f}")
+    print(f"{'Method 3 Recall:':<25} {recall3:.4f}")
+    print(f"{'Method 3 QPS:':<25} {qps3:.1f}")
+    print(f"{'Method 4 Recall:':<25} {recall4:.4f}")
+    print(f"{'Method 4 QPS:':<25} {qps4:.1f}")
+    print("-" * 45)
+    print(f"{'Build time:':<25} {build_time:.1f} s")
+    print("="*45)
 
 
 if __name__ == "__main__":

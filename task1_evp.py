@@ -1,7 +1,11 @@
 import time
+import os
 import h5py
 import numpy as np
-from evp import get_h5_file, EvpBits, compute_all_similarities_batch
+import psutil
+import cpuinfo
+from evp import EvpBits, compute_all_similarities_batch
+from utils.data import get_h5_file
 
 CHUNK_SIZE = 1024
 NON_ZEROS = 512
@@ -55,9 +59,18 @@ def main():
     recall_calc_time = time.time() - recall_start
 
     # Final Summary Output
+    cpu_info = cpuinfo.get_cpu_info()['brand_raw']
+    ram_gb = psutil.virtual_memory().total / (1024**3)
+
     print("\n" + "="*45)
-    print(f"{'FINAL EVALUATION SUMMARY':^45}")
+    print(f"{'SUMMARY':^45}")
     print("="*45)
+    print(f"{'Dataset:':<25} {'Small' if SMALL_DATASET else 'Large'} ({num_rows:,} elements)")
+    print(f"{'Hardware:':<25} {cpu_info}")
+    print(f"{'RAM:':<25} {ram_gb:.2f} GB")
+    print("-" * 45)
+    print(f"{'Settings:':<25} NON_ZEROS={NON_ZEROS}, K_TOP={K_TOP}")
+    print("-" * 45)
     print(f"{'Loading & Conversion:':<25} {load_and_convert_time:>10.2f} s")
     print(f"{'Similarity Computation:':<25} {sim_time:>10.2f} s")
     print(f"{'Recall Calculation:':<25} {recall_calc_time:>10.2f} s")

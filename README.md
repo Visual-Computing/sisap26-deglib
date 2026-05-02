@@ -43,6 +43,18 @@ To run the comprehensive deglib benchmark:
 uv run python task1_deglib_all.py
 ```
 
+## 📈 Benchmark Results
+
+The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (200,000 elements) using an **AMD Ryzen 5 5600G** with **32GB RAM**.
+
+| Method | Settings | Build Time | Query Time | Throughput | Recall |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **EVP** | `NON_ZEROS=512` | 5.9 s | 340.1 s | 588 QPS | 0.7271 |
+| **deglib Explore** | `M=32`, `MaxDist=100` | 38.6 s | 18.2 s | 10,992 QPS | 0.7808 |
+| **deglib Neighbors** | `M=48` | 74.6 s | 5.4 s | 36,704 QPS | 0.7861 |
+
+*Note: Build time includes data loading and conversion/graph construction. Query time for EVP is for all-pairs similarity, while for deglib it is for retrieving K=15 neighbors for all elements.*
+
 ## 🧪 Testing
 Run the EVP test suite to verify implementation correctness and performance:
 ```bash
