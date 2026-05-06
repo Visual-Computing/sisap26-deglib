@@ -20,7 +20,8 @@ from pathlib import Path
 # Add the project root to sys.path to allow importing the evp package
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from evp import get_h5_file, EvpBits, evp_similarity, evp_similarity_batch
+from evp import EvpBits, evp_similarity, evp_similarity_batch
+from utils.data import get_h5_file
 
 NON_ZEROS = 512
 CHUNK_SIZE = 8192
