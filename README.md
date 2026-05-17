@@ -2,6 +2,18 @@
 
 This repository contains implementations for the SISAP 2026 Challenge, focusing on approximate nearest neighbor search (ANN) on the Wikipedia BGE-M3 dataset. It features two primary approaches: **deglib** (Dynamic Exploration Graph Library) and [**EVP** (Equi-Voronoi Polytope) Quantisation](https://github.com/MetricSearch/metric_space_rust).
 
+
+## 🏆 Task Description (Task 1: K-Nearest Neighbor Graph)
+
+The goal of this task (metric self-join) is to compute an approximate $k$-nearest neighbor graph for $k=15$ using all objects in the dataset as queries (excluding self-references).
+
+* **Dataset:** WIKIPEDIA (6.4 million vectors, 1024 dimensions, normalized, BGE-M3 model).
+* **Distance Metric:** Dot product (inner product).
+* **Target Operating Point:** Fastest execution time that achieves an average recall of **at least 0.8**.
+* **Evaluation Criteria:** Total wall-clock time (including preprocessing, indexing, search, and postprocessing/re-ranking) and recall against a gold standard.
+* **Hardware Constraints (Evaluation Container):** 8 vCPUs, 24 GB RAM, read-only mounted dataset. Max execution time: 8 hours.
+
+
 ## 🚀 Quick Start
 
 ### 1. Prerequisites
@@ -55,7 +67,7 @@ The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (2
 | **deglib Explore** | `M=32`, `MaxDist=100` | 38.6 s | 18.2 s | 10,992 QPS | 0.7808 |
 | **deglib Neighbors** | `M=48` | 74.6 s | 5.4 s | 36,704 QPS | 0.7861 |
 
-*Note: Build time includes data loading and conversion/graph construction. Query time for EVP is for all-pairs similarity, while for deglib it is for retrieving K=15 neighbors for all elements.*
+*Note: Build time includes data loading, data conversion, and graph construction. Query time for EVP includes calculating all-pair similarities, while for deglib it measures retrieving K = 15 neighbors for all elements.*
 
 ## 🧪 Testing
 Run the EVP test suite to verify implementation correctness and performance:
