@@ -1,6 +1,6 @@
 # SISAP 2026: Wikipedia BGE-M3 Similarity Search
 
-This repository contains implementations for the SISAP 2026 Challenge, focusing on approximate nearest neighbor search (ANN) on the Wikipedia BGE-M3 dataset. It features two primary approaches: **deglib** (Dynamic Exploration Graph Library) and **EVP** (Equi-Voronoi Polytope) Quantisation.
+This repository contains implementations for the SISAP 2026 Challenge, focusing on approximate nearest neighbor search (ANN) on the Wikipedia BGE-M3 dataset. It features two primary approaches: **deglib** (Dynamic Exploration Graph Library) and [**EVP** (Equi-Voronoi Polytope) Quantisation](https://github.com/MetricSearch/metric_space_rust).
 
 ## 🚀 Quick Start
 
