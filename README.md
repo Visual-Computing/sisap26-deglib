@@ -64,6 +64,7 @@ The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (2
 | **Linear (Rust)** | `fp32` | 1.1 s | 725.1 s | ? QPS | 1.0 |
 | **EVP** | `NON_ZEROS=512` | 5.9 s | 340.1 s | 588 QPS | 0.7271 |
 | **EVP Rust** | `NON_ZEROS=512` | 17.1 s | 134.1 s | ? QPS | 0.7270 |
+| **EVP Cpp** | `NON_ZEROS=512` | 0.9 s | 123.1 s | ? QPS | 0.7270 |
 | **deglib Explore** | `M=32`, `MaxDist=100` | 38.6 s | 18.2 s | 10,992 QPS | 0.7808 |
 | **deglib Neighbors** | `M=48` | 74.6 s | 5.4 s | 36,704 QPS | 0.7861 |
 
