@@ -67,7 +67,7 @@ The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (2
 | **EVP Cpp** | `NON_ZEROS=512` | 0.9 s | 123.1 s | ? QPS | 0.7270 |
 | **deglib Explore** | `M=32`, `MaxDist=100` | 38.6 s | 18.2 s | 10,992 QPS | 0.7808 |
 | **deglib Neighbors** | `M=48` | 74.6 s | 5.4 s | 36,704 QPS | 0.7861 |
-| **deglib+evp Explore** | `M=32`, `MaxDist=300` | 7.4 s | 1.6 s | ? | 0.7004 |
+| **deglib+evp Explore** | `M=32`, `MaxDist=300` | 5.5 s | 0.9 s | ? | 0.7004 |
 
 *Note: Build time includes data loading, data conversion, and graph construction. Query time for EVP includes calculating all-pair similarities, while for deglib it measures retrieving K = 15 neighbors for all elements.*
 
