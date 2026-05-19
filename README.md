@@ -57,17 +57,26 @@ uv run python task1_deglib_all.py
 
 ## 📈 Benchmark Results
 
-The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (200,000 elements) using an **AMD Ryzen 5 5600G** with **32GB RAM**.
+The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (200,000 elements) in FP16 format.
 
-| Method | Settings | Build Time | Query Time | Throughput | Recall |
+**AMD Ryzen 5 5600G** with AVX2 instructions and **32GB RAM**.
+
+| Method | Settings | DType | Build Time | Query Time | Recall |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Linear (Rust)** | `fp32` | 1.1 s | 725.1 s | ? QPS | 1.0 |
-| **EVP** | `NON_ZEROS=512` | 5.9 s | 340.1 s | 588 QPS | 0.7271 |
-| **EVP Rust** | `NON_ZEROS=512` | 17.1 s | 134.1 s | ? QPS | 0.7270 |
-| **EVP Cpp** | `NON_ZEROS=512` | 0.9 s | 123.1 s | ? QPS | 0.7270 |
-| **deglib Explore** | `M=32`, `MaxDist=100` | 38.6 s | 18.2 s | 10,992 QPS | 0.7808 |
-| **deglib Neighbors** | `M=48` | 74.6 s | 5.4 s | 36,704 QPS | 0.7861 |
-| **deglib+evp Explore** | `M=32`, `MaxDist=300` | 5.5 s | 0.9 s | ? | 0.7004 |
+| **Linear (Rust)** |  | `fp32` | 1.1 s | 725.1 s | 1.0 |
+| **EVP (Python)** | `NON_ZEROS=512` | `evp` |  5.9 s | 340.1 s | 0.7271 |
+| **EVP (Rust)** | `NON_ZEROS=512` | `evp` |  17.1 s | 134.1 s | 0.7270 |
+| **EVP (Cpp)** | `NON_ZEROS=512` | `evp` |  0.9 s | 123.1 s | 0.7270 |
+| **deglib Explore (Python)** | `M=32`, `MaxDist=100` | `fp32` | 38.6 s | 18.2 s | 0.7808 |
+| **deglib Neighbors (Python)** | `M=48` | `fp32` | 74.6 s | 5.4 s | 0.7861 |
+
+
+**AMD Ryzen AI 9 HX Pro 375** with AVX512 instruction and **64GB RAM**.
+
+| Method | Settings | DType | Build Time | Query Time | Recall |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **deglib Explore (cpp)** | `M=32`, `MaxDist=115` | `fp32` | 16.3 s | 1.0 s | 0.846 |
+| **deglib+evp Explore (cpp)** | `M=32`, `MaxDist=300` | `evp` | 5.5 s | 0.9 s | 0.7004 |
 
 *Note: Build time includes data loading, data conversion, and graph construction. Query time for EVP includes calculating all-pair similarities, while for deglib it measures retrieving K = 15 neighbors for all elements.*
 
