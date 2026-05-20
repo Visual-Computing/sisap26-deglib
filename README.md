@@ -74,7 +74,7 @@ The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (2
 **AMD Ryzen AI 9 HX Pro 375** with AVX512 instruction and **64GB RAM**.
 
 | Method | Settings | DType | Build Time | Explore Time | Rerank Time | Recall |
-| :--- | :--- | :--- | :--- | :--- | :--- |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **deglib Explore (cpp)** | `M=32`, `MaxDist=100` | `fp32` | 13.3 s | 1.0 s | 0 s | 0.829 |
 | **deglib+evp Explore (cpp)** | `M=32`, `MaxDist=200` | `evp` | 5.5 s | 0.7 s | 0 s | 0.6702 |
 | **deglib+evp Explore+reranking (cpp)** | `M=32`, `MaxDist=200` | `evp+fp32` | 5.5 s | 1.2 s | 2.7 s | 0.8209 |
