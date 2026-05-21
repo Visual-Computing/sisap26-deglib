@@ -77,6 +77,7 @@ The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (2
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **deglib Explore (cpp)** | `M=32`, `MaxDist=100` | `fp32` | 0 s | 13.3 s | 0 s | 1.0 s | 0 s | **14.3 s** | 0.829 |
 | **deglib Explore (cpp)** | `M=32`, `MaxDist=100` | `fp16` | 0 s | 8.2 s | 0 s | 0.7 s | 0 s | **8.9 s** | 0.829 |
+| **evp linear search (cpp)** |  | `evp` | 0.8 s | 0.0 s | 0 s | 108 s | 0 s | **109 s** | 0.7084 |
 | **deglib+evp Explore (cpp)** | `M=32`, `MaxDist=200` | `evp` | 0.8 s | 4.6 s | 0 s | 0.7 s | 0 s | **6.1 s** | 0.6702 |
 | **deglib+evp Explore+reranking (cpp)** | `M=32`, `MaxDist=200` | `evp+fp32` | 0.8 s | 4.6 s | 0 s | 1.2 s | 2.7 s | **9.3 s** | 0.8209 |
 | **deglib+evp Explore+reranking (cpp)** | `M=32`, `MaxDist=200` | `evp+fp16` | 0.8 s | 4.6 s | 0 s | 1.2 s | 2.3 s | **8.9 s** | 0.8206 |
