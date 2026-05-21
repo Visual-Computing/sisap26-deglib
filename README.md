@@ -81,8 +81,8 @@ The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (2
 | **deglib+evp Explore (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | `evp` | 0.8 s | 4.6 s | 0 s | 0.7 s | 0 s | **6.1 s** | 0.6702 |
 | **deglib+evp Explore+reranking (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | `evp+fp32` | 0.8 s | 4.6 s | 0 s | 1.2 s | 2.7 s | **9.3 s** | 0.8209 |
 | **deglib+evp Explore+reranking (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | `evp+fp16` | 0.8 s | 4.6 s | 0 s | 1.2 s | 2.3 s | **8.9 s** | 0.8206 |
-| **deglib+evp Explore+asym (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | `evp+fp32` | 0.8 s | 4.6 s | 0.1 s | 2.5 s | 0 s | **8.0 s** | 0.8255 |
-| **deglib+evp Explore+asym (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | `evp+fp16` | 0.8 s | 4.6 s | 0.1 s | 1.6 s | 0 s | **7.1 s** | 0.8255 |
+| **deglib+evp build (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | `evp+fp32` | 0.8 s | 4.6 s | 0.1 s | 2.5 s | 0 s | **8.0 s** | 0.8255 |
+| **deglib+evp build (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | `evp+fp16` | 0.8 s | 4.6 s | 0.1 s | 1.6 s | 0 s | **7.1 s** | 0.8255 |
 
 *Note: Build time includes data loading, data conversion, and graph construction. Query time for EVP includes calculating all-pair similarities, while for deglib it measures retrieving K = 15 neighbors for all elements.*
 
