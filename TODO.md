@@ -6,8 +6,9 @@ Welcher anderen Quantisierungsansätze gibt es noch? Ist ihre Qualität einstell
 Mögliche Verfahren:
  - EVP
  - PCA
- - ScaNN
+ - [ScaNN](https://github.com/google-research/google-research/tree/master/scann)
  - Sisap 2024 Feature Compression
+ - [TurboQuant](https://github.com/RyanCodrai/turbovec)
 
 # Baseline
 - EVP baseline (lineare Suche wandelt aktuell EVP bits in uint8 um für substraction und fp32 für dot produkt)
