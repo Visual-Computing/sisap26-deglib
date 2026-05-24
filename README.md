@@ -63,13 +63,17 @@ The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (2
 
 | Method | Settings | DType | Build Time | Query Time | Recall |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Linear (Rust)** |  | `fp32` | 1.1 s | 725.1 s | 1.0 |
-| **EVP (Python)** | `NON_ZEROS=512` | `evp` |  5.9 s | 340.1 s | 0.7271 |
-| **EVP (Rust)** | `NON_ZEROS=512` | `evp` |  17.1 s | 134.1 s | 0.7270 |
-| **EVP (Cpp)** | `NON_ZEROS=512` | `evp` |  0.9 s | 123.1 s | 0.7270 |
+| **EVP (Python)** | `NON_ZEROS=512` | `evp` |  5.9 s | 340.1 s | 0.7084 |
 | **deglib Explore (Python)** | `M=32`, `MaxDist=100` | `fp32` | 38.6 s | 18.2 s | 0.7808 |
 | **deglib Neighbors (Python)** | `M=48` | `fp32` | 74.6 s | 5.4 s | 0.7861 |
 
+| Method | Settings | Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | **Total Time** | Recall |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100`, `K=15` | 0.0 s | 18.9 s | 0.1 s | 1.2 s | 0.0 s | **20.2 s** | 0.8295 |
+| **evp linear search (cpp)** | — | 0.8 s | 0.0 s | 0.0 s | 216.3 s | 0.0 s | **217.1 s** | 0.7084 |
+| **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 0.8 s | 4.8 s | 0.0 s | 0.9 s | 0.0 s | **6.5 s** | 0.6700 |
+| **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 0.8 s | 4.8 s | 0.1 s | 1.4 s | 3.8 s | **10.9 s** | 0.8209 |
+| **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 0.8 s | 4.8 s | 0.2 s | 4.0 s | 0.0 s | **9.8 s** | 0.8249 |
 
 **AMD Ryzen AI 9 HX Pro 375** with AVX512 instruction and **64GB RAM**.
 
