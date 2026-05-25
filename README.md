@@ -74,7 +74,7 @@ The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (2
 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200`` | 0.8 s | 4.8 s | 0.0 s | 0.9 s | 0.0 s | **6.5 s** | 0.6700 |
 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 0.8 s | 4.8 s | 0.1 s | 1.3 s | 3.9 s | **10.9 s** | 0.8209 |
 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.8 s | 0.2 s | 3.8 s | 0.0 s | **9.6 s** | 0.8249 |
-| **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.8 s | 0.2 s | 31.1 s | 0.0 s | **36.9 s** | 0.780 |
+| **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.8 s | 0.2 s | 3.0 s | 0.0 s | **8.8 s** | 0.7249 |
 
 **AMD Ryzen AI 9 HX Pro 375** with AVX512 instruction and **64GB RAM**.
 
