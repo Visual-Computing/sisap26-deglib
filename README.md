@@ -69,12 +69,12 @@ The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (2
 
 | Pos | Method | Settings | Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | **Total Time** | Recall | Ideal RAM |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| 1 | **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | 0.0 s | 18.9 s | 0.1 s | 1.2 s | 0.0 s | **20.2 s** | 0.8295 | 435MB |
-| 2 | **evp linear search (cpp)** | — | 0.8 s | 0.0 s | 0.0 s | 209.3 s | 0.0 s | **210.1 s** | 0.7084 | 77MB |
-| 3 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.8 s | 0.0 s | 0.9 s | 0.0 s | **6.5 s** | 0.6700 | 77MB |
-| 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 0.8 s | 4.8 s | 0.1 s | 1.3 s | 3.9 s | **10.9 s** | 0.8209 | 486MB |
-| 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.8 s | 0.2 s | 3.8 s | 0.0 s | **9.6 s** | 0.8249 | 486MB |
-| 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.0 s | **6.9 s** | 0.7249 | 486MB |
+| 1 | **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | 0.0 s | 18.9 s | 0.1 s | 1.2 s | 0.0 s | **20.2 s** | 0.8295 | 460MB |
+| 2 | **evp linear search (cpp)** | — | 0.8 s | 0.0 s | 0.0 s | 209.3 s | 0.0 s | **210.1 s** | 0.7084 | 102MB |
+| 3 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.8 s | 0.0 s | 0.9 s | 0.0 s | **6.5 s** | 0.6700 | 102MB |
+| 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 0.8 s | 4.8 s | 0.1 s | 1.3 s | 3.9 s | **10.9 s** | 0.8209 | 512MB |
+| 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.8 s | 0.2 s | 3.8 s | 0.0 s | **9.6 s** | 0.8249 | 512MB |
+| 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.0 s | **6.9 s** | 0.7249 | 512MB |
 
 
 **AMD Ryzen AI 9 HX Pro 375** with AVX512 instruction and **64GB RAM**.
