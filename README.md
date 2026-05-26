@@ -67,7 +67,7 @@ The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (2
 | **deglib Explore (Python)** | `M=32`, `MaxDist=100` | `fp32` | 38.6 s | 18.2 s | 0.7808 |
 | **deglib Neighbors (Python)** | `M=48` | `fp32` | 74.6 s | 5.4 s | 0.7861 |
 
-| Pos | Method | Settings | Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | **Total Time** | Recall | Ideal RAM |
+| Pos | Method | Settings | Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | **Duration** | Recall | Ideal RAM |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | 1 | **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | 0.0 s | 18.9 s | 0.1 s | 1.2 s | 0.0 s | **20.2 s** | 0.8295 | 460MB |
 | 2 | **evp linear search (cpp)** | — | 0.8 s | 0.0 s | 0.0 s | 209.3 s | 0.0 s | **210.1 s** | 0.7084 | 102MB |
