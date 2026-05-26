@@ -67,14 +67,15 @@ The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (2
 | **deglib Explore (Python)** | `M=32`, `MaxDist=100` | `fp32` | 38.6 s | 18.2 s | 0.7808 |
 | **deglib Neighbors (Python)** | `M=48` | `fp32` | 74.6 s | 5.4 s | 0.7861 |
 
-| Method | Settings | Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | **Total Time** | Recall |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | 0.0 s | 18.9 s | 0.1 s | 1.2 s | 0.0 s | **20.2 s** | 0.8295 |
-| **evp linear search (cpp)** | — | 0.8 s | 0.0 s | 0.0 s | 209.3 s | 0.0 s | **210.1 s** | 0.7084 |
-| **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200`` | 0.8 s | 4.8 s | 0.0 s | 0.9 s | 0.0 s | **6.5 s** | 0.6700 |
-| **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 0.8 s | 4.8 s | 0.1 s | 1.3 s | 3.9 s | **10.9 s** | 0.8209 |
-| **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.8 s | 0.2 s | 3.8 s | 0.0 s | **9.6 s** | 0.8249 |
-| **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.0 s | **6.9 s** | 0.7249 |
+
+| Pos | Method | Settings | Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | **Total Time** | Recall |
+| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1 | **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | 0.0 s | 18.9 s | 0.1 s | 1.2 s | 0.0 s | **20.2 s** | 0.8295 |
+| 2 | **evp linear search (cpp)** | — | 0.8 s | 0.0 s | 0.0 s | 209.3 s | 0.0 s | **210.1 s** | 0.7084 |
+| 3 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200`` | 0.8 s | 4.8 s | 0.0 s | 0.9 s | 0.0 s | **6.5 s** | 0.6700 |
+| 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 0.8 s | 4.8 s | 0.1 s | 1.3 s | 3.9 s | **10.9 s** | 0.8209 |
+| 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.8 s | 0.2 s | 3.8 s | 0.0 s | **9.6 s** | 0.8249 |
+| 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.0 s | **6.9 s** | 0.7249 |
 
 **AMD Ryzen AI 9 HX Pro 375** with AVX512 instruction and **64GB RAM**.
 
