@@ -80,7 +80,7 @@ uv run python task1_deglib_all.py
 | 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 4 s | 650 s | **956 s** | 0.7391 | 
 | 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 2 s | 57 s | **361 s** | 0.6695 |
 | 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 86 s | **390 s** | 0.7382 |
-| 8 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=300`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 114 s | **418 s** | 0.7675 |
+| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=300`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 114 s | **418 s** | 0.7675 |
 
 | Modus | Methode | Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | Total Time | Recall@15 |
 |:---:|:---|---:|:---:|:---:|:---:|:---:|:---:|:---:|
