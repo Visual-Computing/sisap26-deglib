@@ -60,37 +60,39 @@ uv run python task1_deglib_all.py
 **AMD Ryzen 5 5600G** with AVX2 instructions and **32GB RAM**.
 
 **Wikipedia BGE-M3 Small** dataset (200,000 elements) in FP16 format
-| Modi | Method | Settings | Load Time |Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | **Overall Time** | Recall | Ideal RAM |
-| :--- | :--- | :--- | :---: | :---: |:---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| 1 | **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | 0.6 s | 0.0 s | 18.9 s | 0.1 s | 1.2 s | 0.0 s | **20.8 s** | 0.8295 | 460MB |
-| 2 | **evp linear search (cpp)** | — | 0.6 s | 0.8 s | 0.0 s | 0.0 s | 209.3 s | 0.0 s | **211 s** | 0.7084 | 102MB |
-| 3 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 0.9 s | 0.0 s | **7.1 s** | 0.6700 | 102MB |
-| 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 3.7 s | **11.2 s** | 0.8209 | 512MB |
-| 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.2 s | 3.8 s | 0.0 s | **10.2 s** | 0.8249 | 512MB |
-| 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.0 s | **7.5 s** | 0.7249 | 512MB |
-| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.9 s | **8.4 s** | 0.825 | 512MB |
+| Modi | Method | Settings | Load Time |Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | Overall Time | Recall |
+| :--- | :--- | :--- | :---: | :---: |:---: | :---: | :---: | :---: | :---: | :---: |
+| 1 | **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | 0.6 s | 0.0 s | 18.9 s | 0.1 s | 1.2 s | 0.0 s | 20.8 s | 0.8149 |
+| 2 | **evp linear search (cpp)** | — | 0.6 s | 0.8 s | 0.0 s | 0.0 s | 209.3 s | 0.0 s | 211 s | 0.7084 | 
+| 3 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 0.9 s | 0.0 s | 7.1 s | 0.6700 |
+| 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.0 s | 0.9 s | 8.1 s | 0.8194 |
+| 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.2 s | 3.8 s | 0.0 s | 10.2 s | 0.8249 | 
+| 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.0 s | 7.5 s | 0.7249 | 
+| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.9 s | 8.4 s | 0.825 |
 
 **Wikipedia BGE-M3 Large** dataset (6,400,000 elements) in FP16 format. 
-| Modi | Method | Settings | Load Time | Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | **Overall Time** | Recall | 
+| Modi | Method | Settings | Load Time | Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | Overall Time | Recall | 
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | 
-| 1 | **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | 15 s | 0 s | 816 s | 0 s | 55 s | 0 s | 886 s | 0.7481 |
+| 1 | **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | 15 s | 0 s | 816 s | 0 s | 45 s | 0 s | 876 s | 0.7279 |
 | 2 | **evp linear search (cpp)** | — | — | — | — | — | — | — | — | — |
-| 3 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 0 s | 44 s | 0 s | **346 s** | 0.6270 |
-| 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 15 s | 22 s | 265 s | 0 s | 500 s | 102 s | **904 s** | 0.7343 |
-| 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 4 s | 135 s |  0 s |**441 s** | 0.7391 | 
-| 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 2 s | 57 s | 0 s | **361 s** | 0.6695 |
-| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 56 s | 30 s | **390 s** | 0.7382 |
+| 3 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 0 s | 44 s | 0 s | 346 s | 0.6270 |
+| 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 15 s | 22 s | 265 s | 0 s | 50 s | 20 s | 372 s | 0.7343 |
+| 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 4 s | 135 s |  0 s | 441 s | 0.7391 | 
+| 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 2 s | 57 s | 0 s | 361 s | 0.6695 |
+| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 66 s | 20 s | 390 s | 0.7382 |
 
 
 ## 📈 Hyperparameter Optimization
 
 Here are some test results for the **Wikipedia BGE-M3 Large** with optimized hyper parameters.
-| Modi | Method | Settings | Load Time | Quant Time | Build Time | Convert Time | Explore+Rerank Time | **Overall Time** | Recall | 
-| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 86 s | **390 s** | 0.7382 |
-| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=300`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 114 s | **418 s** | 0.7675 |
-| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=400`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 140 s | **444 s** | 0.7863 |
-| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=400`, `evpK=100` | 15 s | 22 s | 265 s | 2 s | 201 s | **505 s** | 0.7873 |
+| Modi | Method | Settings | Load Time | Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | Overall Time | Recall | 
+| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 66 s | 20 s | 390 s | 0.7382 |
+| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=300`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 94 s | 20 s | 418 s | 0.7675 |
+| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=400`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 120 s | 20 s | 444 s | 0.7863 |
+| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=400`, `evpK=100` | 15 s | 22 s | 265 s | 2 s | 135 s | 40 s | 479 s | 0.7874 |
+| 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)**  | `M=32`, `MaxDist=400`, `evpK=50` | 15 s | 22 s | 265 s | 0 s | 90 s | 20 s | 412 s | 0.7790 |
+| 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)**  | `M=32`, `MaxDist=500`, `evpK=50` | 15 s | 22 s | 265 s | 0 s | 110 s | 20 s | 432 s | 0.7914 |
 
 *Note: Build time includes data loading, data conversion, and graph construction. Query time for EVP includes calculating all-pair similarities, while for deglib it measures retrieving K = 15 neighbors for all elements.*
 
