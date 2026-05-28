@@ -93,6 +93,7 @@ Here are some test results for the **Wikipedia BGE-M3 Large** with optimized hyp
 | 7 | **deglib+evp build+Asym FP16&EVP Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=400`, `evpK=100` | 15 s | 22 s | 265 s | 2 s | 135 s | 40 s | 479 s | 0.7874 |
 | 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)**  | `M=32`, `MaxDist=400`, `evpK=50` | 15 s | 22 s | 265 s | 0 s | 90 s | 20 s | 412 s | 0.7790 |
 | 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)**  | `M=32`, `MaxDist=500`, `evpK=50` | 15 s | 22 s | 265 s | 0 s | 110 s | 20 s | 432 s | 0.7914 |
+| 3 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200`, `NoneZero=600` | 15 s | 22 s | 264 s | 0 s | 41 s | 0 s | 347 s | 0.6327 |
 
 *Note: Build time includes data loading, data conversion, and graph construction. Query time for EVP includes calculating all-pair similarities, while for deglib it measures retrieving K = 15 neighbors for all elements.*
 
