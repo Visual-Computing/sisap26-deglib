@@ -78,7 +78,7 @@ uv run python task1_deglib_all.py
 | 3 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200` | 22 s | 265 s | 0 s | 44 s | **331** | 0.6270 |
 | 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 22 s | 265 s | 0 s | 602 s | **889 s** | 0.7343 |
 | 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 22 s | 265 s | 4 s | 650 s | **941 s** | 0.7391 | 
-| 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 22 s | 265 s | 2 s | 54 s | **343** | 0.6695 |
+| 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 22 s | 265 s | 2 s | 57 s | **346** | 0.6695 |
 | 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 22 s | 265 s | 2 s | 85 s | **374 s** | 0.7382 |
 
 
