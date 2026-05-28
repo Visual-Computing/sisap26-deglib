@@ -80,7 +80,17 @@ uv run python task1_deglib_all.py
 | 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 4 s | 650 s | **956 s** | 0.7391 | 
 | 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 2 s | 57 s | **361 s** | 0.6695 |
 | 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 86 s | **390 s** | 0.7382 |
+
+
+## 📈 Hyperparameter Optimization
+
+Here are some test results for the **Wikipedia BGE-M3 Large** with optimized hyper parameters.
+| Modi | Method | Settings | Load Time | Quant Time | Build Time | Convert Time | Explore+Rerank Time | **Overall Time** | Recall | 
+| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 86 s | **390 s** | 0.7382 |
 | 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=300`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 114 s | **418 s** | 0.7675 |
+| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=400`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 140 s | **444 s** | 0.7863 |
+| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=400`, `evpK=100` | 15 s | 22 s | 265 s | 2 s | 201 s | **505 s** | 0.7873 |
 
 *Note: Build time includes data loading, data conversion, and graph construction. Query time for EVP includes calculating all-pair similarities, while for deglib it measures retrieving K = 15 neighbors for all elements.*
 
