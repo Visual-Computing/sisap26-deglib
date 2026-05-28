@@ -57,10 +57,9 @@ uv run python task1_deglib_all.py
 
 ## 📈 Benchmark Results
 
-The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (200,000 elements) in FP16 format.
-
 **AMD Ryzen 5 5600G** with AVX2 instructions and **32GB RAM**.
 
+**Wikipedia BGE-M3 Small** dataset (200,000 elements) in FP16 format
 | Modi | Method | Settings | Load Time |Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | **Overall Time** | Recall | Ideal RAM |
 | :--- | :--- | :--- | :---: | :---: |:---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | 1 | **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | 0.6 s | 0.0 s | 18.9 s | 0.1 s | 1.2 s | 0.0 s | **20.8 s** | 0.8295 | 460MB |
@@ -70,6 +69,17 @@ The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (2
 | 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.2 s | 3.8 s | 0.0 s | **10.2 s** | 0.8249 | 512MB |
 | 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.0 s | **7.5 s** | 0.7249 | 512MB |
 | 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.9 s | **8.4 s** | 0.825 | 512MB |
+
+**Wikipedia BGE-M3 Large** dataset (6,400,000 elements) in FP16 format
+| Modi | Method | Settings | Quant Time | Build Time | Convert Time | Explore+Rerank Time | **Overall Time** | Recall | 
+| :--- | :--- | :--- | :---: | :---: |:---: | :---: | :---: | :---: | 
+| 1 | **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | — | — | — | — | — | — |
+| 2 | **evp linear search (cpp)** | — | — | — | — | — | — | — |
+| 3 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200` | 22 s | 265 s | 0 s | 44 s | **331** | 0.6270 |
+| 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 22 s | 265 s | 0 s | 602 s | **889 s** | 0.7343 |
+| 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 22 s | 265 s | 4 s | 650 s | **941 s** | 0.7391 | 
+| 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 22 s | 265 s | 2 s | 54 s | **343** | 0.6695 |
+| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 22 s | 265 s | 2 s | 85 s | **774 s** | 0.7382 |
 
 *Note: Build time includes data loading, data conversion, and graph construction. Query time for EVP includes calculating all-pair similarities, while for deglib it measures retrieving K = 15 neighbors for all elements.*
 
