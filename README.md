@@ -77,7 +77,7 @@ uv run python task1_deglib_all.py
 | 2 | **evp linear search (cpp)** | — | — | — | — | — | — | — | — | — |
 | 3 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 0 s | 44 s | 0 s | **346 s** | 0.6270 |
 | 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 15 s | 22 s | 265 s | 0 s | 500 s | 102 s | **904 s** | 0.7343 |
-| 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 4 s | 650 s |  0 s |**956 s** | 0.7391 | 
+| 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 4 s | 135 s |  0 s |**441 s** | 0.7391 | 
 | 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 15 s | 22 s | 265 s | 2 s | 57 s | 0 s | **361 s** | 0.6695 |
 | 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 15 s | 22 s | 265 s | 2 s | 56 s | 30 s | **390 s** | 0.7382 |
 
