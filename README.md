@@ -79,7 +79,17 @@ uv run python task1_deglib_all.py
 | 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 22 s | 265 s | 0 s | 602 s | **889 s** | 0.7343 |
 | 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 22 s | 265 s | 4 s | 650 s | **941 s** | 0.7391 | 
 | 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 22 s | 265 s | 2 s | 54 s | **343** | 0.6695 |
-| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 22 s | 265 s | 2 s | 85 s | **774 s** | 0.7382 |
+| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 22 s | 265 s | 2 s | 85 s | **374 s** | 0.7382 |
+
+
+| Modus | Methode | Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | Total Time | Recall@15 |
+|:---:|:---|---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| 3 | EVP build+EVP explore | 22.76 s | 278.13 s | — | 46.77 s | — | 347.67 s | 0.6278 |
+| 4 | EVP build+EVP explore+FP16 rerank (evpK=200) | 23.27 s | 318.91 s | — | 617.22 s | 121.79 s | 1081.19 s | 0.7343 |
+| 5 | EVP build+FP16 external search | 22.79 s | 266.86 s | 3.92 s | 647.31 s | — | 940.87 s | 0.7391 |
+| 6 | EVP build+asym FP16&EVP explore | 22.72 s | 282.88 s | 2.15 s | 54.52 s | — | 362.26 s | 0.6695 |
+| 7 | EVP build+asym explore+FP16 rerank (evpK=50) | 22.75 s | 284.85 s | 2.43 s | 58.71 s | 30.00 s | 398.74 s | 0.7382 |
+
 
 *Note: Build time includes data loading, data conversion, and graph construction. Query time for EVP includes calculating all-pair similarities, while for deglib it measures retrieving K = 15 neighbors for all elements.*
 
