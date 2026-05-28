@@ -61,44 +61,15 @@ The following results were obtained on the **Wikipedia BGE-M3 Small** dataset (2
 
 **AMD Ryzen 5 5600G** with AVX2 instructions and **32GB RAM**.
 
-| Method | Settings | DType | Build Time | Query Time | Recall |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **EVP (Python)** | `NON_ZEROS=512` | `evp` |  5.9 s | 340.1 s | 0.7084 |
-| **deglib Explore (Python)** | `M=32`, `MaxDist=100` | `fp32` | 38.6 s | 18.2 s | 0.7808 |
-| **deglib Neighbors (Python)** | `M=48` | `fp32` | 74.6 s | 5.4 s | 0.7861 |
-
-| Pos | Method | Settings | Load Time |Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | **Overall Time** | Recall | Ideal RAM |
+| Modi | Method | Settings | Load Time |Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | **Overall Time** | Recall | Ideal RAM |
 | :--- | :--- | :--- | :---: | :---: |:---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | 1 | **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | 0.6 s | 0.0 s | 18.9 s | 0.1 s | 1.2 s | 0.0 s | **20.8 s** | 0.8295 | 460MB |
 | 2 | **evp linear search (cpp)** | — | 0.6 s | 0.8 s | 0.0 s | 0.0 s | 209.3 s | 0.0 s | **211 s** | 0.7084 | 102MB |
 | 3 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 0.9 s | 0.0 s | **7.1 s** | 0.6700 | 102MB |
-| 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 3.9 s | **11.4 s** | 0.8209 | 512MB |
+| 4 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 3.7 s | **11.2 s** | 0.8209 | 512MB |
 | 5 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.2 s | 3.8 s | 0.0 s | **10.2 s** | 0.8249 | 512MB |
 | 6 | **deglib+evp build+Asym FP16&EVP Explore (cpp)** | `M=32`, `MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.0 s | **7.5 s** | 0.7249 | 512MB |
-| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 1.1 s | **8.6 s** | 0.825 | 512MB |
-
-
-**AMD Ryzen AI 9 HX Pro 375** with AVX512 instruction and **64GB RAM**.
-
-| Pos | Method | Settings |Quant Time | Build Time | Convert Time | Explore Time | Rerank Time | **Total Time** | Recall |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | **deglib FP32 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | 0 s | 13.3 s | 0 s | 1.0 s | 0 s | **14.3 s** | 0.829 |
-| 2 | **deglib FP16 Build&Explore (cpp)** | `M=32`, `MaxDist=100` | 0 s | 8.2 s | 0 s | 0.7 s | 0 s | **8.9 s** | 0.829 |
-| 3 | **evp linear search (cpp)** |  | 0.8 s | 0.0 s | 0 s | 108 s | 0 s | **109 s** | 0.7084 |
-| 4 | **deglib+evp Build&Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.6 s | 0 s | 0.7 s | 0 s | **6.1 s** | 0.6702 |
-| 5 | **deglib+evp Build&Explore+FP32 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 0.8 s | 4.6 s | 0 s | 1.2 s | 2.7 s | **9.3 s** | 0.8209 |
-| 6 | **deglib+evp Build&Explore+FP16 Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=200` | 0.8 s | 4.6 s | 0 s | 1.2 s | 2.3 s | **8.9 s** | 0.8206 |
-| 7 | **deglib+evp build+FP32 Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.6 s | 0.1 s | 2.5 s | 0 s | **8.0 s** | 0.8255 |
-| 8 | **deglib+evp build+FP16 Explore (cpp)** | `M=32`, `MaxDist=200` | 0.8 s | 4.6 s | 0.1 s | 1.7 s | 0 s | **7.2 s** | 0.8255 |
-
-
-**Intel XEON PLATINUM 8581C** with 8 of 60 cores, AVX512 instructions and **30GB RAM**.
-
-| Method | Settings | DType | Build Time | Query Time | Recall |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **EVP (Python)** | `NON_ZEROS=512` | `evp` |  4.5 s | 292.7 s | 0.7271 |
-| **deglib Explore (Python)** | `M=32`, `MaxDist=100` | `fp32` | 15.0 s | 9.3 s | 0.7808 |
-| **deglib Neighbors (Python)** | `M=48` | `fp32` | 28.4 s | 2.4 s | 0.7861 |
+| 7 | **deglib+evp build+Asym FP16&EVP Explore+FP Rerank (cpp)** | `M=32`, `MaxDist=200`, `evpK=50` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.9 s | **8.4 s** | 0.825 | 512MB |
 
 *Note: Build time includes data loading, data conversion, and graph construction. Query time for EVP includes calculating all-pair similarities, while for deglib it measures retrieving K = 15 neighbors for all elements.*
 
