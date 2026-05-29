@@ -106,14 +106,14 @@ docker run \
 
 | Stage | Base | Purpose |
 |---|---|---|
-| `builder` | `ubuntu:24.04` | Clones repo, installs `cmake g++`, compiles with `FORCE_AVX2=ON` |
+| `builder` | `ubuntu:24.04` | Clones repo, installs `cmake g++`, compiles with `-march=native` |
 | `runtime` | `ubuntu:24.04` | Copies only the binary; minimal footprint |
 
 **CMake flags used:**
 ```
--DCMAKE_BUILD_TYPE=Release -DFORCE_AVX2=ON
+-DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-march=native"
 ```
-- `FORCE_AVX2=ON` → portable binary for all x86_64 servers with AVX2 (SISAP evaluation hardware)
+- `-march=native` → compiles the binary optimized specifically for the host CPU (enabling AVX2, AVX-512, etc. depending on machine capabilities)
 
 ### Container Limits (SISAP-compliant)
 ```bash
@@ -269,31 +269,31 @@ result.to_dict()          # dict for JSON serialisation
 
 To reproduce the small-dataset table on your own hardware:
 ```bash
-uv run python benchmark_small.py
+uv run python benchmark_task1_small.py
 ```
 
 ### Small dataset (200K vectors, AMD Ryzen 5 5600G, AVX2, 32 GB RAM)
 
 | Mode | Method | Settings | Load | Quant | Build | Convert | Explore | Rerank | Total | Recall |
 |:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1 | FP16 Build+Explore | `M=32, MaxDist=100` | 0.6 s | 0.0 s | 18.9 s | 0.1 s | 1.2 s | 0.0 s | 20.8 s | 0.8149 |
-| 2 | EVP linear search | — | 0.6 s | 0.8 s | 0.0 s | 0.0 s | 209.3 s | 0.0 s | 211 s | 0.7084 |
-| 3 | EVP Build+Explore | `M=32, MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 0.9 s | 0.0 s | 7.1 s | 0.6700 |
-| 4 | EVP Build+Explore+Rerank | `M=32, MaxDist=200, evpK=50` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.0 s | 0.9 s | 8.1 s | 0.8194 |
-| 5 | EVP build+FP16 Explore | `M=32, MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.2 s | 3.8 s | 0.0 s | 10.2 s | 0.8249 |
-| 6 | EVP build+Asym Explore | `M=32, MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.0 s | 7.5 s | 0.7249 |
-| 7 | EVP build+Asym+Rerank | `M=32, MaxDist=200, evpK=50` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.9 s | 8.4 s | 0.825 |
+| 1 | FP16 Build+Explore | `M=32, MaxDist=100` | 0.6 s | 0.0 s | 18.9 s | 0.1 s | 1.5 s | 0.0 s | 21.3 s | 0.8539 |
+| 2 | EVP linear search | — | 0.6 s | 0.8 s | 0.0 s | 0.0 s | 209.3 s | 0.0 s | 211 s | 0.7124 |
+| 3 | EVP Build+Explore | `M=32, MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 0.9 s | 0.0 s | 7.1 s | 0.6814 |
+| 4 | EVP Build+Explore+Rerank | `M=32, MaxDist=200, evpK=50` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.2 s | 0.9 s | 8.3 s | 0.8418 |
+| 5 | EVP build+FP16 Explore | `M=32, MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.2 s | 3.4 s | 0.0 s | 10.0 s | 0.8483 |
+| 6 | EVP build+Asym Explore | `M=32, MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.0 s | 7.5 s | 0.7376 |
+| 7 | EVP build+Asym+Rerank | `M=32, MaxDist=200, evpK=50` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.6 s | 0.9 s | 8.7 s | 0.8483 |
 
 ### Large dataset (6.35M vectors, AMD Ryzen 5 5600G, AVX2, 32 GB RAM)
 
 | Mode | Method | Settings | Load | Quant | Build | Convert | Explore | Rerank | Total | Recall |
 |:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1 | FP16 Build+Explore | `M=32, MaxDist=100` | 15 s | 0 s | 816 s | 0 s | 45 s | 0 s | 876 s | 0.7279 |
-| 3 | EVP Build+Explore | `M=32, MaxDist=200` | 15 s | 22 s | 265 s | 0 s | 44 s | 0 s | 346 s | 0.6270 |
-| 4 | EVP Build+Explore+Rerank | `M=32, MaxDist=200, evpK=50` | 15 s | 22 s | 265 s | 0 s | 50 s | 20 s | 372 s | 0.7343 |
-| 5 | EVP build+FP16 Explore | `M=32, MaxDist=200` | 15 s | 22 s | 265 s | 4 s | 135 s | 0 s | 441 s | 0.7391 |
-| 6 | EVP build+Asym Explore | `M=32, MaxDist=200` | 15 s | 22 s | 265 s | 2 s | 57 s | 0 s | 361 s | 0.6695 |
-| 7 | EVP build+Asym+Rerank | `M=32, MaxDist=200, evpK=50`  | 15 s | 22 s | 265 s | 2 s | 66 s | 20 s | 390 s | 0.7382 |
+| 1 | FP16 Build+Explore | `M=32, MaxDist=100` | 15 s | 0 s | 816 s | 0 s | 55 s | 0 s | 886 s | 0.7686 |
+| 3 | EVP Build+Explore | `M=32, MaxDist=200` | 15 s | 22 s | 265 s | 0 s | 40 s | 0 s | 340 s | 0.6447 |
+| 4 | EVP Build+Explore+Rerank | `M=32, MaxDist=200, evpK=50` | 15 s | 22 s | 265 s | 0 s | 55 s | 20 s | 377 s | 0.7632 |
+| 5 | EVP build+FP16 Explore | `M=32, MaxDist=200` | 15 s | 22 s | 265 s | 4 s | 125 s | 0 s | 431 s | 0.7687 |
+| 6 | EVP build+Asym Explore | `M=32, MaxDist=200` | 15 s | 22 s | 265 s | 2 s | 57 s | 0 s | 361 s | 0.6880 |
+| 7 | EVP build+Asym+Rerank | `M=32, MaxDist=200, evpK=50`  | 15 s | 22 s | 265 s | 2 s | 72 s | 20 s | 396 s | 0.7676 |
 
 
 

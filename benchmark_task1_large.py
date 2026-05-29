@@ -1,16 +1,15 @@
 """
-benchmark_small.py — Reproduce the small-dataset benchmark table from README.
+benchmark_task1_large.py — Reproduce the large-dataset benchmark table from README.
 
-Runs all 7 modes sequentially on the small dataset (200K vectors) and prints
+Runs all 6 modes sequentially on the large dataset (6.4M vectors) and prints
 a Markdown table identical to the one in README.md so results can be compared.
 
 Usage
 -----
-    uv run python benchmark_small.py
+    uv run python benchmark_task1_large.py
 
 Prerequisites
 -------------
-- Docker image must be built:  docker build -t sisap26-deglib .
 - Docker Desktop must be running.
 """
 from __future__ import annotations
@@ -36,7 +35,6 @@ class ModeConfig:
 
 MODES: list[ModeConfig] = [
     ModeConfig(name="mode1", mode="fp16", label="FP16 Build+Explore", settings="M=32, MaxDist=100", max_dist=100),
-    ModeConfig(name="mode2", mode="evp-linear", label="EVP linear search", settings="—"),
     ModeConfig(name="mode3", mode="evp", label="EVP Build+Explore", settings="M=32, MaxDist=200"),
     ModeConfig(name="mode4", mode="evp-rerank", label="EVP Build+Explore+Rerank", settings="M=32, MaxDist=200, evpK=50", evp_k=50),
     ModeConfig(name="mode5", mode="evp-build-fp16-external-search", label="EVP build+FP16 Explore", settings="M=32, MaxDist=200"),

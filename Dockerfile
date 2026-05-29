@@ -24,14 +24,13 @@ WORKDIR /build/DynamicExplorationGraph/cpp
 
 # Configure:
 #   - Release build for maximum performance
-#   - FORCE_AVX2=ON  → portable AVX2 binary (SISAP evaluation hardware supports AVX2)
+#   - CMAKE_CXX_FLAGS="-march=native" → compile with the best instruction set (AVX2, AVX-512, SSE, etc.) supported by the host machine's CPU
 #   - ENABLE_BENCHMARKS is left at its default (ON) so the evp/ subdirectory
 #     (which contains deglib_evp_task1) is included in the build
 #   - DATA_PATH is intentionally omitted — the HDF5 path is passed at runtime
 RUN cmake -S . -B build \
         -DCMAKE_BUILD_TYPE=Release \
-        -DFORCE_AVX2=ON \
-        -DCMAKE_CXX_FLAGS="-mf16c" \
+        -DCMAKE_CXX_FLAGS="-march=native" \
     && cmake --build build --target deglib_evp_task1 -j$(nproc)
 
 # ============================================================
