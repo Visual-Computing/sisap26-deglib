@@ -262,9 +262,34 @@ class Task1Runner:
         self.results_dir.mkdir(parents=True, exist_ok=True)
 
         # ---- Resolve dataset -------------------------------------------------
-        data_dir = self.get_data_dir(size)
+        # Resolve dataset directories, handling symlinks dynamically (e.g. Hugging Face on Unix).
+        # We find a common ancestor of the local file and its target so relative symlinks remain valid inside the container.
+        data_dir = self.get_data_dir(size).absolute()
         hdf5_filename = DATASET_FILES[size]
-        container_hdf5 = f"/data/{hdf5_filename}"
+        local_path = (data_dir / hdf5_filename).absolute()
+        real_path = local_path.resolve()
+
+        common_ancestor = None
+        if local_path != real_path:
+            p1_parents = [local_path] + list(local_path.parents)
+            for parent in p1_parents:
+                try:
+                    real_path.relative_to(parent)
+                    if len(parent.parts) > 2:  # Avoid root mount (e.g., '/' or 'C:\')
+                        common_ancestor = parent
+                        break
+                except ValueError:
+                    continue
+
+        if common_ancestor is not None:
+            # Mount the common ancestor and reference the dataset relative to it
+            mount_dir = common_ancestor
+            rel_path = local_path.relative_to(common_ancestor)
+            container_hdf5 = f"/data/{rel_path.as_posix()}"
+        else:
+            # Fallback: mount the real file's parent directory and use the real filename
+            mount_dir = real_path.parent
+            container_hdf5 = f"/data/{real_path.name}"
 
         # ---- Build CLI command -----------------------------------------------
         cmd: list[str] = [
@@ -289,7 +314,7 @@ class Task1Runner:
 
         # ---- Volume mounts ---------------------------------------------------
         volumes: dict[str, dict[str, str]] = {
-            str(data_dir): {"bind": "/data", "mode": "ro"},
+            str(mount_dir): {"bind": "/data", "mode": "ro"},
             str(self.results_dir): {"bind": "/results", "mode": "rw"},
         }
 
@@ -317,7 +342,7 @@ class Task1Runner:
             f"[Task1Runner] Limits: cpus=8, memory=24g, swap=24g, swappiness=0",
             flush=True,
         )
-        print(f"[Task1Runner] Data mount : {data_dir} → /data:ro", flush=True)
+        print(f"[Task1Runner] Data mount : {mount_dir} → /data:ro", flush=True)
         print(f"[Task1Runner] Results    : {self.results_dir} → /results:rw", flush=True)
 
         # ---- Start container and stream logs --------------------------------
