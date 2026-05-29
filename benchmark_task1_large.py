@@ -65,7 +65,7 @@ def run_mode(runner: Task1Runner, cfg: ModeConfig) -> Task1Result | None:
     print(f"  Settings: {cfg.settings}")
     print(f"{'='*60}\n")
 
-    kwargs: dict = dict(mode=cfg.mode, max_dist=cfg.max_dist)
+    kwargs: dict = dict(mode=cfg.mode, size="large", max_dist=cfg.max_dist)
     if cfg.evp_k is not None:
         kwargs["evp_k"] = cfg.evp_k
 
@@ -84,7 +84,7 @@ def run_mode(runner: Task1Runner, cfg: ModeConfig) -> Task1Result | None:
 
 def print_table(results: dict[str, Task1Result]) -> None:
     print("\n" + "=" * 60)
-    print("  Benchmark Results — Small Dataset (200K vectors)")
+    print("  Benchmark Results — Large Dataset (6.4M vectors)")
     print("=" * 60)
 
     header = f"| {'Mode':<4} | {'Method':<30} | {'Settings':<35} | {'Load':>6} | {'Quant':>6} | {'Build':>6} | {'Convert':>6} | {'Explore':>6} | {'Rerank':>6} | {'Total':>6} | {'Recall':>7} |"
