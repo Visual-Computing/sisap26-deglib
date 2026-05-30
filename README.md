@@ -1,6 +1,6 @@
-# SISAP 2026 — Wikipedia BGE-M3 Similarity Search (Task 1)
+# deglib - SISAP 2026 Indexing Challenge Submission
 
-This repository implements a solution for [**SISAP 2026 Challenge — Task 1: K-Nearest Neighbor Graph**](https://sisap-challenges.github.io/2026/) using the [**Dynamic Exploration Graph (DEG)**](https://github.com/Visual-Computing/DynamicExplorationGraph/tree/evp) library with [**EVP (Equi-Voronoi Polytope) quantisation**](https://github.com/MetricSearch/metric_space_rust).
+This repository contains the a submission for the [**SISAP 2026 Indexing Challenge**](https://sisap-challenges.github.io/2026/) Task 1 using the [**Dynamic Exploration Graph (DEG)**](https://github.com/Visual-Computing/DynamicExplorationGraph/tree/evp) in combination with [**EVP (Equi-Voronoi Polytope) quantisation**](https://github.com/MetricSearch/metric_space_rust).
 
 The primary execution path is **Docker-based**: a single container clones, builds, and runs the optimised C++ binary `deglib_evp_task1`, while a Python runner handles dataset download, container lifecycle, and result parsing.
 
@@ -18,7 +18,7 @@ The primary execution path is **Docker-based**: a single container clones, build
 - [Troubleshooting](#-troubleshooting)
 
 
-## 🏆 Task Overview
+## 🏆 Task 1 Overview
 
 | Parameter | Value |
 |---|---|
@@ -304,7 +304,8 @@ uv run python benchmark_task1_small.py
 sisap26-deglib/
 ├── Dockerfile                   # Multi-stage: clone evp → cmake → binary
 ├── main.py                      # End-to-end example using Task1Runner
-├── benchmark_small.py            # Reproduce the small-dataset benchmark table
+├── benchmark_task1_small.py     # Reproduce the small-dataset benchmark table
+├── benchmark_task1_large.py     # Reproduce the large-dataset benchmark table
 ├── PLAN.md                      # Detailed implementation plan
 ├── SISAP_2026_Task1.md          # SISAP 2026 task specification (German)
 │
