@@ -7,7 +7,7 @@
 
 ## `--prune-worst` Sweep
 
-Varies `--prune-worst <n>`: replaces the $N$ worst neighbors per vertex (largest weight / lowest similarity) with a self-loop pointing to the vertex itself (weight `0.0f`). Mode 1 (`fp16`), `MaxDist=100`, `wikipedia-bge-m3-small`.
+Varies `--prune-worst <n>`: replaces the $N$ worst neighbors per vertex (largest weight / lowest similarity) with a self-loop pointing to the vertex itself (weight `0.0f`). Mode 1 (`fp16`), `MaxDist=100`,  `--non-zeros 512` on the small `wikipedia-bge-m3-small` dataset.
 
 | `prune_worst` | Recall@15 | Explore Time (ms) | Notes |
 |:---:|:---:|:---:|:---|
@@ -47,7 +47,7 @@ Varies `--prune-worst <n>`: replaces the $N$ worst neighbors per vertex (largest
 
 ## Hyperparameter Optimization (Large Dataset)
 
-Results for **Wikipedia BGE-M3 Large** with optimized hyperparameters.
+Results for **Wikipedia BGE-M3 Large** with varios hyperparameters settings but `--prune-worst 0` and `--non-zeros 512`, both can increase the recall further.
 
 | Mode | Method | Settings | Load | Quant | Build | Convert | Explore | Rerank | Overall | Recall |
 | :--- | :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
