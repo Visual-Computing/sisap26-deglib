@@ -79,11 +79,13 @@ This document contains performance benchmarks for different configurations, impl
 ### Large Dataset (6.4M vectors)
 - **Benchmark Script:** `benchmark_task1_large.py` (configured to use 8 cores and 24 GB RAM)
 
-| Mode | Method | Settings | Load | Quant | Build | Convert | Explore | Rerank | Total | Recall |
-| :---: | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **1** | FP16 Build+Explore | `M=32, MaxDist=100` | — | — | — | — | — | — | — | — |
-| **3** | EVP Build+Explore | `M=32, MaxDist=200` | — | — | — | — | — | — | — | — |
-| **4** | EVP Build+Explore+Rerank | `M=32, MaxDist=200, evpK=50` | — | — | — | — | — | — | — | — |
-| **5** | EVP build+FP16 Explore | `M=32, MaxDist=200` | — | — | — | — | — | — | — | — |
-| **6** | EVP build+Asym Explore | `M=32, MaxDist=200` | — | — | — | — | — | — | — | — |
-| **7** | EVP build+Asym+Rerank | `M=32, MaxDist=200, evpK=50` | — | — | — | — | — | — | — | — |
+| Mode | Method                         | Settings                            |   Load |  Quant |  Build | Convert | Explore | Rerank |  Total |  Recall |
+|:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| 1    | FP16 Build+Explore             | M=32, MaxDist=100                   |  34.5s |   0.0s | 532.7s |   0.0s |  30.2s* |   0.0s | 597.4s |  76.89% |
+| 3    | EVP Build+Explore              | M=32, MaxDist=200                   |  17.5s |  17.8s | 211.6s |   0.0s |  20.8s |   0.0s | 267.8s |  64.52% |
+| 4    | EVP Build+Explore+Rerank       | M=32, MaxDist=200, evpK=50          |   8.2s |  16.4s | 220.4s |   0.0s |  32.9s |  15.9s | 294.1s* |  76.23% |
+| 5    | EVP build+FP16 Explore         | M=32, MaxDist=200                   |  22.3s |  16.4s | 218.8s |   2.4s |  59.4s* |   0.0s | 319.2s |  76.82% |
+| 6    | EVP build+Asym Explore         | M=32, MaxDist=200                   |  20.6s |  16.7s | 217.5s |   1.3s |  51.9s |   0.0s | 308.0s |  68.84% |
+| 7    | EVP build+Asym+Rerank          | M=32, MaxDist=200, evpK=50          |  26.3s |  16.4s | 219.6s |   1.2s |  58.0s |  14.1s | 335.9s |  76.80% |
+
+\* Keep in mind this is a AVX512 machine, those FP16 distance calculations are nearly twice as fast as AVX2 instructions and are therefore similar to "Asym" distance calculation timings.
