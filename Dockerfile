@@ -24,13 +24,20 @@ WORKDIR /build/DynamicExplorationGraph/cpp
 
 # Configure:
 #   - Release build for maximum performance
-#   - CMAKE_CXX_FLAGS="-march=native" → compile with the best instruction set (AVX2, AVX-512, SSE, etc.) supported by the host machine's CPU
-#   - ENABLE_BENCHMARKS is left at its default (ON) so the evp/ subdirectory
-#     (which contains deglib_evp_task1) is included in the build
-#   - DATA_PATH is intentionally omitted — the HDF5 path is passed at runtime
-RUN cmake -S . -B build \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_CXX_FLAGS="-march=native" \
+#   - FORCE_AVX2=OFF (default) → -march=native: best ISA on the build host
+#     (AVX-512 on capable machines). FORCE_AVX2=ON → AVX2-only build that
+#     matches the SISAP evaluation/target server (which has NO AVX-512).
+#     NOTE: in the AVX2 case -march=native must be dropped, otherwise it would
+#     re-enable AVX-512 regardless of the FORCE_AVX2 option.
+#   - ENABLE_BENCHMARKS stays ON so evp/ (deglib_evp_task1) is built.
+#   - DATA_PATH is intentionally omitted — the HDF5 path is passed at runtime.
+#   Build AVX2 image:  docker build --build-arg FORCE_AVX2=ON -t sisap26-deglib:avx2 .
+ARG FORCE_AVX2=OFF
+RUN if [ "$FORCE_AVX2" = "ON" ]; then \
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFORCE_AVX2=ON ; \
+    else \
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-march=native" ; \
+    fi \
     && cmake --build build --target deglib_evp_task1 -j$(nproc)
 
 # ============================================================
