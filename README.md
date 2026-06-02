@@ -234,6 +234,22 @@ result.to_dict()          # dict for JSON serialisation
 
 ⭐ Best recall/speed trade-off for the SISAP constraint (24 GB RAM, 8 CPU).
 
+| Category | Subcategory | mode1 | mode2 | mode3 | mode4 | mode5 | mode6 | mode7 | mode8 |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Graph Construction** | no graph / linear search | | X | | | | | | |
+| | EVP | | | X | X | X | X | X | X |
+| | int 8 | | | | | | | | |
+| | float 16 | X | | | | | | | |
+| **Search Vector** | EVP | | X | X | X | | X | X | X |
+| | int 8 | | | | | | | | |
+| | float 16 | X | | | | X | | | |
+| **Query Vector** | EVP | | X | X | X | | | | X |
+| | int 8 | | | | | | | | |
+| | float 16 | X | | | | X | X | X | |
+| **Reranking** | no | X | X | X | | X | X | | |
+| | int 8 | | | | | | | | X |
+| | float 16 | | | | X | | | X | |
+
 ## 🔧 CLI Parameters
 
 ```
