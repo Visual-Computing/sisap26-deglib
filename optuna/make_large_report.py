@@ -45,9 +45,13 @@ m4 = [r for r in rows if r["mode"] == "mode4"]
 m7 = [r for r in rows if r["mode"] == "mode7"]
 
 # ---- extra plot: evpK effect + non_zeros effect -------------------------------
+# evpK panel must pin non_zeros to the canonical value per k_graph, else the
+# Tier D nz-variation runs (also at evpK=50) get mixed in and the line zigzags.
+CANON_NZ = {24: 640, 28: 576, 32: 512}
 fig, (axA, axB) = plt.subplots(1, 2, figsize=(13, 5))
 for kg, col in ((24, "#7fb3d5"), (28, "#2e86c1"), (32, "#1b4f72")):
-    pts = sorted([r for r in m4 if r["kg"] == kg and r["md"] == 800], key=lambda r: r["evpK"])
+    pts = sorted([r for r in m4 if r["kg"] == kg and r["md"] == 800 and r["nz"] == CANON_NZ[kg]],
+                 key=lambda r: r["evpK"])
     if pts:
         axA.plot([p["evpK"] for p in pts], [p["recall"] for p in pts], "-o", color=col, label=f"k_graph={kg}")
 axA.axhline(0.80, ls="--", color="black", lw=1)
