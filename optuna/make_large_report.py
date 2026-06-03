@@ -150,14 +150,18 @@ md.append("## 6. The 15 submission candidates\n")
 md.append("Recall-safety ladder (two-sided hedge against the dev→live recall shift, whose direction "
           "is unknown): one sub-0.80 *aggressive* slot (wins if live ≥ dev), the fastest safe crosser, "
           "and a tail up to ~0.85 (insurance if live is harder). 10 mode4 + 5 mode7.\n")
-md.append("| slot | mode | k_graph | max_dist | evpK | non_zeros | recall (dev large) | total (s, AVX-512) |\n"
-          "|--:|--|--:|--:|--:|--:|--:|--:|")
+md.append("| slot | mode | k_graph | k_ext | prune_worst | non_zeros | max_dist | evpK | recall (dev large) | total (s, AVX-512) |\n"
+          "|--:|--|--:|--:|--:|--:|--:|--:|--:|--:|")
 for c in cands:
-    md.append(f"| {c['slot']} | {c['mode']} | {c['k_graph']} | {c['max_dist']} | {c['evpK']} | "
-              f"{c['non_zeros']} | {float(c['recall_dev_large']):.4f} | {float(c['total_s_avx512']):.0f} |")
+    md.append(f"| {c['slot']} | {c['mode']} | {c['k_graph']} | {c['k_ext']} | {c['prune_worst']} | "
+              f"{c['non_zeros']} | {c['max_dist']} | {c['evpK']} | {float(c['recall_dev_large']):.4f} | "
+              f"{float(c['total_s_avx512']):.0f} |")
 md.append("")
-md.append("All share `eps_ext=0.002`, `k_top=15`, `threads=8`. mode4 is the win bet; the 5 mode7 are "
-          "a higher-recall-per-config hedge (slower, but more margin if the live set is harder).\n")
+md.append("All share `eps_ext=0.002`, `k_top=15`, `threads=8`. Build params `k_ext`, `prune_worst`, "
+          "`eps_ext` and (per build-config) `non_zeros` were carried/interpolated from the small "
+          "fronts — only `k_graph`, `max_dist`, `evpK` (+ the evpK/non_zeros sensitivity tiers) were "
+          "swept on large. mode4 is the win bet; the 5 mode7 are a higher-recall-per-config hedge "
+          "(slower, but more margin if the live set is harder).\n")
 
 md.append("## 7. Caveats & next steps\n")
 md.append("- **AVX-512 timings only.** The recall column is final (SIMD-independent), but the "

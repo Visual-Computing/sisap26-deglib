@@ -68,14 +68,15 @@ for (mode, kg, nz, kext, pw), members in groups.items():
 out = OUT / "candidates_15_avx2.csv"
 with open(out, "w", newline="") as f:
     w = csv.writer(f)
-    w.writerow(["slot", "mode", "k_graph", "max_dist", "evpK", "non_zeros",
+    w.writerow(["slot", "mode", "k_graph", "k_ext", "prune_worst", "non_zeros", "max_dist", "evpK",
                 "recall_avx512", "total_avx512", "recall_avx2", "total_avx2", "avx2/avx512"])
     for c in cands:
         key = (c["mode"], int(c["k_graph"]), int(c["max_dist"]), int(c["evpK"]))
         rec2, tot2 = avx2.get(key, (None, None))
         t512 = float(c["total_s_avx512"])
         ratio = (tot2 / t512) if tot2 else None
-        w.writerow([c["slot"], c["mode"], c["k_graph"], c["max_dist"], c["evpK"], c["non_zeros"],
+        w.writerow([c["slot"], c["mode"], c["k_graph"], c["k_ext"], c["prune_worst"],
+                    c["non_zeros"], c["max_dist"], c["evpK"],
                     c["recall_dev_large"], round(t512, 1),
                     round(rec2, 4) if rec2 is not None else "",
                     round(tot2, 1) if tot2 is not None else "",

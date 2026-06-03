@@ -62,25 +62,25 @@ Total time = build + search. Lower `k_graph` = cheaper build but needs more `max
 
 Recall-safety ladder (two-sided hedge against the dev→live recall shift, whose direction is unknown): one sub-0.80 *aggressive* slot (wins if live ≥ dev), the fastest safe crosser, and a tail up to ~0.85 (insurance if live is harder). 10 mode4 + 5 mode7.
 
-| slot | mode | k_graph | max_dist | evpK | non_zeros | recall (dev large) | total (s, AVX-512) |
-|--:|--|--:|--:|--:|--:|--:|--:|
-| 1 | mode4 | 26 | 500 | 50 | 608 | 0.7920 | 303 |
-| 2 | mode4 | 26 | 600 | 50 | 608 | 0.8023 | 313 |
-| 3 | mode4 | 26 | 700 | 50 | 608 | 0.8109 | 323 |
-| 4 | mode4 | 26 | 800 | 50 | 608 | 0.8181 | 332 |
-| 5 | mode4 | 26 | 900 | 50 | 608 | 0.8239 | 340 |
-| 6 | mode4 | 26 | 1000 | 50 | 608 | 0.8286 | 348 |
-| 7 | mode4 | 26 | 1200 | 50 | 608 | 0.8353 | 361 |
-| 8 | mode4 | 26 | 1400 | 50 | 608 | 0.8393 | 369 |
-| 9 | mode4 | 32 | 900 | 50 | 512 | 0.8422 | 386 |
-| 10 | mode4 | 32 | 800 | 100 | 512 | 0.8474 | 404 |
-| 11 | mode7 | 28 | 400 | 50 | 576 | 0.8061 | 401 |
-| 12 | mode7 | 32 | 400 | 50 | 512 | 0.8148 | 403 |
-| 13 | mode7 | 32 | 500 | 50 | 512 | 0.8271 | 428 |
-| 14 | mode7 | 32 | 600 | 50 | 512 | 0.8372 | 454 |
-| 15 | mode7 | 28 | 800 | 75 | 576 | 0.8485 | 497 |
+| slot | mode | k_graph | k_ext | prune_worst | non_zeros | max_dist | evpK | recall (dev large) | total (s, AVX-512) |
+|--:|--|--:|--:|--:|--:|--:|--:|--:|--:|
+| 1 | mode4 | 26 | 32 | 9 | 608 | 500 | 50 | 0.7920 | 303 |
+| 2 | mode4 | 26 | 32 | 9 | 608 | 600 | 50 | 0.8023 | 313 |
+| 3 | mode4 | 26 | 32 | 9 | 608 | 700 | 50 | 0.8109 | 323 |
+| 4 | mode4 | 26 | 32 | 9 | 608 | 800 | 50 | 0.8181 | 332 |
+| 5 | mode4 | 26 | 32 | 9 | 608 | 900 | 50 | 0.8239 | 340 |
+| 6 | mode4 | 26 | 32 | 9 | 608 | 1000 | 50 | 0.8286 | 348 |
+| 7 | mode4 | 26 | 32 | 9 | 608 | 1200 | 50 | 0.8353 | 361 |
+| 8 | mode4 | 26 | 32 | 9 | 608 | 1400 | 50 | 0.8393 | 369 |
+| 9 | mode4 | 32 | 24 | 11 | 512 | 900 | 50 | 0.8422 | 386 |
+| 10 | mode4 | 32 | 24 | 11 | 512 | 800 | 100 | 0.8474 | 404 |
+| 11 | mode7 | 28 | 34 | 10 | 576 | 400 | 50 | 0.8061 | 401 |
+| 12 | mode7 | 32 | 24 | 11 | 512 | 400 | 50 | 0.8148 | 403 |
+| 13 | mode7 | 32 | 24 | 11 | 512 | 500 | 50 | 0.8271 | 428 |
+| 14 | mode7 | 32 | 24 | 11 | 512 | 600 | 50 | 0.8372 | 454 |
+| 15 | mode7 | 28 | 34 | 10 | 576 | 800 | 75 | 0.8485 | 497 |
 
-All share `eps_ext=0.002`, `k_top=15`, `threads=8`. mode4 is the win bet; the 5 mode7 are a higher-recall-per-config hedge (slower, but more margin if the live set is harder).
+All share `eps_ext=0.002`, `k_top=15`, `threads=8`. Build params `k_ext`, `prune_worst`, `eps_ext` and (per build-config) `non_zeros` were carried/interpolated from the small fronts — only `k_graph`, `max_dist`, `evpK` (+ the evpK/non_zeros sensitivity tiers) were swept on large. mode4 is the win bet; the 5 mode7 are a higher-recall-per-config hedge (slower, but more margin if the live set is harder).
 
 ## 7. Caveats & next steps
 
