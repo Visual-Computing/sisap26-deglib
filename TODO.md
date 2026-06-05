@@ -1,5 +1,16 @@
 Der Text beschreibt den minimalen Arbeitsplan für eine Sisap Submission + Informationen für ein Paper.
 
+# Zielserver (AVX2) — wichtige Messungen erneut laufen lassen
+Der Evaluations-/Zielserver beherrscht KEIN AVX512, nur AVX2. Die aktuellen Optuna-/Sweep-Messungen
+laufen auf einem AVX512-Server. Recall ist identisch (SIMD-Breite ändert die Ergebnisse nicht), aber
+Zeiten und damit das Ranking ("schnellstes Verfahren mit Recall >= 0.8") können sich verschieben.
+- Dockerfile unterstützt jetzt `--build-arg FORCE_AVX2=ON` (AVX2-Only-Build, Image-Tag z.B. `sisap26-deglib:avx2`).
+- Wichtige Konstellationen (Pareto-Front-Kandidaten nahe der 0.8-Grenze) mit erzwungenem AVX2 nachmessen,
+  da die Zeiten über die Submission-Auswahl entscheiden.
+- Finale kleine Serie idealerweise auf dem echten Zielserver: mode4 + mode7, je 5–8 Konstellationen
+  entlang der Pareto-Front.
+- AVX512-Messdaten für das Paper aufheben.
+
 # Was ist der beste Quantisierungsansatz? 
 Welcher anderen Quantisierungsansätze gibt es noch? Ist ihre Qualität einstellbar? Muss man sie anlernen? Wie schnell lässt sich ihre Distanzberechen?
 

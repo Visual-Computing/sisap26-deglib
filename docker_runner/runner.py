@@ -22,6 +22,7 @@ Volume mounts:
 from __future__ import annotations
 
 import sys
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -216,6 +217,7 @@ class Task1Runner:
         no_recall: bool = False,
         output: str | None = None,
         graph: str | None = None,
+        timeout_s: float | None = None,
     ) -> Task1Result:
         """
         Run deglib_evp_task1 in a Docker container and return structured results.
@@ -356,6 +358,23 @@ class Task1Runner:
                 "Run Task1Runner().build_image() first."
             )
 
+        # Optional watchdog: kill the container if it runs past timeout_s. The
+        # blocking logs() stream then ends and wait() returns a non-zero code,
+        # so the caller sees a failed run instead of hanging forever (guards
+        # against pathological build configs in a hyperparameter sweep).
+        timed_out = threading.Event()
+        watchdog: threading.Timer | None = None
+        if timeout_s:
+            def _kill_on_timeout() -> None:
+                timed_out.set()
+                try:
+                    container.kill()
+                except docker.errors.APIError:
+                    pass
+            watchdog = threading.Timer(timeout_s, _kill_on_timeout)
+            watchdog.daemon = True
+            watchdog.start()
+
         try:
             # Stream logs line by line as they arrive
             for raw_chunk in container.logs(stream=True, follow=True):
@@ -366,7 +385,17 @@ class Task1Runner:
             result_info = container.wait()
             exit_code: int = result_info.get("StatusCode", -1)
 
+            if timed_out.is_set():
+                print(
+                    f"[Task1Runner] Container exceeded timeout of {timeout_s:.0f}s "
+                    f"and was killed.",
+                    file=sys.stderr,
+                    flush=True,
+                )
+
         finally:
+            if watchdog is not None:
+                watchdog.cancel()
             # Always remove the container
             try:
                 container.remove(force=True)
