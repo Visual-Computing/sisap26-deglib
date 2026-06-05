@@ -3,7 +3,7 @@ name = "sisap26-deglib"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "deglib>=0.1.6",
     "docker>=7.0",
@@ -13,4 +13,5 @@ dependencies = [
     "numpy",
     "psutil",
     "py-cpuinfo",
+    "vc-flas>=0.1.7",
 ]

@@ -14,9 +14,7 @@ wheels/
 .venv
 
 # Results — binary outputs not tracked; directory structure kept via .gitkeep
-results/task1/*.h5
-results/task1/*.ivecs
-results/task1/*.deg
+results/
 deglib/
 datasets/
 input/

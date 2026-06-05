@@ -158,3 +158,63 @@
 | **FLAS L2, R=0.93, optimize_narrow_grids=0** | 53.6 | 21.2 | 137.7 | 71.37% | −8.20pp |
 
 **Fazit:** Die Default-Einstellungen aus `default_flas_settings()` sind für diesen Workload optimal. Alle getesteten Abweichungen (`num_filters>1`, `max_swap_positions>9`, `sample_factor>1`, `optimize_narrow_grids=0`) verschlechtern das Ergebnis.
+
+---
+
+# Random pre-sorting Vergleich — Mode 1 (FP32 Build + FP32 Search)
+
+- **Graphbau:** mode1, k_graph=30, k_ext=30, eps_ext=0.001, eps_search=0.30, max_dist=20000, build-threads=1, search-threads=8, num-runs=1, opt_target=LowLID, prune_worst=0, SortOrder.SHUFFLE
+
+| Seed | Recall@eps=0.3 |
+| --- | --- |
+| 0 | 68.59% |
+| 1 | 66.80% |
+| 2 | 69.97% |
+| 3 | 68.45% |
+| 4 | 66.98% |
+| 5 | 67.56% |
+| 6 | 62.84% |
+| 7 | 70.32% |
+| 8 | 65.32% |
+| 9 | 69.14% |
+| 10 | 69.03% |
+| 11 | 68.17% |
+| 12 | 66.04% |
+| 13 | 68.92% |
+| 14 | 70.10% |
+| 15 | 64.88% |
+| 16 | 70.19% |
+| 17 | 67.58% |
+| 18 | 66.34% |
+| 19 | 67.22% |
+| 20 | 70.14% |
+| 21 | 66.19% |
+| 22 | 71.28% |
+| 23 | 68.07% |
+| 24 | 68.15% |
+| 25 | 68.98% |
+| 26 | 68.03% |
+| 27 | 69.31% |
+| 28 | 71.69% |
+| 29 | 65.85% |
+| 30 | 64.69% |
+| 31 | 66.97% |
+| 32 | 68.62% |
+| 33 | 65.69% |
+| 34 | 66.19% |
+| 35 | 65.46% |
+| 39 | 70.23% |
+| 40 | 65.87% |
+| 41 | 70.49% |
+| 39 | 70.23% |
+| 40 | 65.87% |
+| 41 | 70.49% |
+| 42 | 69.80% |
+| 43 | 66.56% |
+| 44 | 67.67% |
+| 45 | 72.00% |
+| 46 | 68.14% |
+| 47 | 69.99% |
+| 48 | 69.10% |
+| 49 | 68.60% |
+| 50 | 69.18% |
