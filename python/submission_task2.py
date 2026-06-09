@@ -151,8 +151,8 @@ def generate_outputs(results: dict[str, Task2Result], output_dir: Path, system_i
 
     import matplotlib.ticker as ticker
     ax = plt.gca()
-    ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
-    ax.xaxis.set_minor_locator(ticker.MultipleLocator(5))
+    ax.xaxis.set_major_locator(ticker.MaxNLocator(nbins=8, min_n_ticks=4))
+    ax.xaxis.set_minor_locator(ticker.AutoMinorLocator(5))
 
     plt.axhline(y=80.0, color="gray", linestyle="--", label="Target Recall (80%)")
     plt.xlabel("Search Time (ms)")
