@@ -122,11 +122,13 @@ def print_table(results: dict[str, Task1Result]) -> None:
     print()
 
 
-def generate_outputs(results: dict[str, Task1Result], output_dir: Path) -> None:
+def generate_outputs(results: dict[str, Task1Result], output_dir: Path, system_info: dict | None = None) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # 1. Save results to JSON
-    json_data = {}
+    json_data: dict = {}
+    if system_info:
+        json_data["system_info"] = system_info
     for name, res in results.items():
         if res is not None:
             json_data[name] = res.to_dict()
@@ -196,6 +198,16 @@ def generate_outputs(results: dict[str, Task1Result], output_dir: Path) -> None:
     md_content = []
     md_content.append("# Task 1 Small Benchmark Summary — Small Dataset (200K vectors)")
     md_content.append("\nThis table lists the metrics for each benchmark mode.\n")
+    if system_info:
+        cpu = system_info.get('cpu_model') or 'unknown'
+        phys = system_info.get('cpu_physical')
+        logi = system_info.get('cpu_logical')
+        ram  = system_info.get('ram_total_gb')
+        c_cpu = system_info.get('container_cpus')
+        c_ram = system_info.get('container_ram_gb')
+        cores_str = f"{phys}C/{logi}T" if phys and logi else (f"{logi}T" if logi else "?")
+        md_content.append(f"**Host:** {cpu} ({cores_str}) &nbsp;·&nbsp; RAM: {ram} GiB total")
+        md_content.append(f"**Container limits:** {c_cpu} CPU threads · {c_ram} GiB RAM\n")
     
     headers = ["Mode", "Method", "Settings", "Load", "Quant", "Build", "Convert", "Explore", "Rerank", "Total", "Recall"]
     md_content.append("| " + " | ".join(headers) + " |")
@@ -230,6 +242,7 @@ def generate_outputs(results: dict[str, Task1Result], output_dir: Path) -> None:
 def main() -> None:
     runner = Task1Runner(results_dir=Path(__file__).parent / "results", echo_logs=True)
     runner.build_image(force=False)
+    system_info = runner.get_system_info()
 
     num_threads = runner.cpu_limit
     results: dict[str, Task1Result] = {}
@@ -243,7 +256,7 @@ def main() -> None:
     print_table(results)
     
     output_dir = Path(__file__).parent / "results" / "benchmark" / "task1_small"
-    generate_outputs(results, output_dir)
+    generate_outputs(results, output_dir, system_info)
 
     print("Done.")
 

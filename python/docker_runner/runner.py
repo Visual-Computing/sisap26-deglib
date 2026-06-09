@@ -22,6 +22,7 @@ Volume mounts:
 from __future__ import annotations
 
 import os
+import platform
 import sys
 import threading
 from pathlib import Path
@@ -117,6 +118,60 @@ class BaseRunner:
 
         # Lazy-initialised Docker client
         self._client: docker.DockerClient | None = None
+
+    # ---------------------------------------------------------------------- #
+    # System information                                                       #
+    # ---------------------------------------------------------------------- #
+
+    def get_system_info(self) -> dict:
+        """
+        Return a dict with host CPU and RAM information.
+
+        Uses ``psutil`` when available for accurate details; falls back to
+        ``platform`` / ``os`` so the call never raises.
+
+        Keys
+        ----
+        cpu_model      : processor model string (may be empty on Linux)
+        cpu_physical   : number of physical CPU cores
+        cpu_logical    : number of logical CPU threads
+        ram_total_gb   : total installed RAM in GiB (rounded to 1 decimal)
+        ram_available_gb: available RAM in GiB at the time of the call
+        container_cpus : CPU threads given to the container (SISAP limit)
+        container_ram_gb: RAM given to the container in GiB (SISAP limit)
+        """
+        info: dict = {
+            "cpu_model": platform.processor() or platform.machine(),
+            "cpu_physical": None,
+            "cpu_logical": os.cpu_count(),
+            "ram_total_gb": None,
+            "ram_available_gb": None,
+            "container_cpus": _NANO_CPUS // 1_000_000_000,
+            "container_ram_gb": round(_MEM_LIMIT / 1024**3, 1),
+        }
+        try:
+            import psutil
+            info["cpu_physical"] = psutil.cpu_count(logical=False)
+            info["cpu_logical"] = psutil.cpu_count(logical=True)
+            vm = psutil.virtual_memory()
+            info["ram_total_gb"] = round(vm.total / 1024**3, 1)
+            info["ram_available_gb"] = round(vm.available / 1024**3, 1)
+            # Try to get a nicer CPU name on Windows
+            try:
+                import subprocess
+                result = subprocess.run(
+                    ["wmic", "cpu", "get", "Name", "/value"],
+                    capture_output=True, text=True, timeout=3
+                )
+                for line in result.stdout.splitlines():
+                    if line.startswith("Name="):
+                        info["cpu_model"] = line[5:].strip()
+                        break
+            except Exception:
+                pass
+        except ImportError:
+            pass
+        return info
 
     @property
     def client(self) -> docker.DockerClient:
