@@ -1,0 +1,311 @@
+{
+    "system_info": {
+        "cpu_model": "INTEL(R) XEON(R) PLATINUM 8581C CPU @ 2.30GHz",
+        "cpu_physical": 4,
+        "cpu_logical": 8,
+        "ram_total_gb": 29.4,
+        "ram_available_gb": 28.3,
+        "container_cpus": 8,
+        "container_ram_gb": 24.0
+    },
+    "mode4_slot1": {
+        "mode": "evp-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.218,
+        "quant_time_s": 0.4785,
+        "build_time_s": 1.4683,
+        "convert_time_s": 0.0,
+        "explore_time_s": 0.9919,
+        "rerank_time_s": 0.2048,
+        "overall_time_s": 3.4806999999999997,
+        "recall_results": [
+            [
+                576,
+                0.7413
+            ]
+        ],
+        "best_recall": 0.7413
+    },
+    "mode4_slot2": {
+        "mode": "evp-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.21580000000000002,
+        "quant_time_s": 0.5013,
+        "build_time_s": 1.4609,
+        "convert_time_s": 0.0,
+        "explore_time_s": 1.0127000000000002,
+        "rerank_time_s": 0.2447,
+        "overall_time_s": 3.5608,
+        "recall_results": [
+            [
+                707,
+                0.7842
+            ]
+        ],
+        "best_recall": 0.7842
+    },
+    "mode4_slot3": {
+        "mode": "evp-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.21430000000000002,
+        "quant_time_s": 0.4952,
+        "build_time_s": 1.897,
+        "convert_time_s": 0.0,
+        "explore_time_s": 0.8357,
+        "rerank_time_s": 0.2805,
+        "overall_time_s": 3.8361,
+        "recall_results": [
+            [
+                404,
+                0.8004000000000001
+            ]
+        ],
+        "best_recall": 0.8004000000000001
+    },
+    "mode4_slot4": {
+        "mode": "evp-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.2309,
+        "quant_time_s": 0.4785,
+        "build_time_s": 1.6238,
+        "convert_time_s": 0.0,
+        "explore_time_s": 1.1809,
+        "rerank_time_s": 0.2737,
+        "overall_time_s": 3.9348,
+        "recall_results": [
+            [
+                666,
+                0.8140999999999999
+            ]
+        ],
+        "best_recall": 0.8140999999999999
+    },
+    "mode4_slot5": {
+        "mode": "evp-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.21680000000000002,
+        "quant_time_s": 0.521,
+        "build_time_s": 1.8395,
+        "convert_time_s": 0.0,
+        "explore_time_s": 0.9782000000000001,
+        "rerank_time_s": 0.2895,
+        "overall_time_s": 3.9749,
+        "recall_results": [
+            [
+                620,
+                0.8186
+            ]
+        ],
+        "best_recall": 0.8186
+    },
+    "mode4_slot6": {
+        "mode": "evp-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.2184,
+        "quant_time_s": 0.5043,
+        "build_time_s": 1.6499000000000001,
+        "convert_time_s": 0.0,
+        "explore_time_s": 1.2146,
+        "rerank_time_s": 0.5921000000000001,
+        "overall_time_s": 4.341399999999999,
+        "recall_results": [
+            [
+                431,
+                0.8271999999999999
+            ]
+        ],
+        "best_recall": 0.8271999999999999
+    },
+    "mode4_slot7": {
+        "mode": "evp-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.2149,
+        "quant_time_s": 0.496,
+        "build_time_s": 1.1801,
+        "convert_time_s": 0.0,
+        "explore_time_s": 1.9632,
+        "rerank_time_s": 0.6257,
+        "overall_time_s": 4.7504,
+        "recall_results": [
+            [
+                742,
+                0.7347
+            ]
+        ],
+        "best_recall": 0.7347
+    },
+    "mode4_slot8": {
+        "mode": "evp-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.21780000000000002,
+        "quant_time_s": 0.4692,
+        "build_time_s": 2.0352,
+        "convert_time_s": 0.0,
+        "explore_time_s": 1.5362,
+        "rerank_time_s": 0.5301,
+        "overall_time_s": 4.9832,
+        "recall_results": [
+            [
+                586,
+                0.8709
+            ]
+        ],
+        "best_recall": 0.8709
+    },
+    "mode4_slot9": {
+        "mode": "evp-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.2152,
+        "quant_time_s": 0.5476,
+        "build_time_s": 2.472,
+        "convert_time_s": 0.0,
+        "explore_time_s": 1.2150999999999998,
+        "rerank_time_s": 0.3421,
+        "overall_time_s": 4.947100000000001,
+        "recall_results": [
+            [
+                561,
+                0.8797
+            ]
+        ],
+        "best_recall": 0.8797
+    },
+    "mode4_slot10": {
+        "mode": "evp-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.2185,
+        "quant_time_s": 0.5494,
+        "build_time_s": 2.3149,
+        "convert_time_s": 0.0,
+        "explore_time_s": 1.5893,
+        "rerank_time_s": 0.7576,
+        "overall_time_s": 5.6431000000000004,
+        "recall_results": [
+            [
+                533,
+                0.8803
+            ]
+        ],
+        "best_recall": 0.8803
+    },
+    "mode7_slot11": {
+        "mode": "evp-asymmetric-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.2132,
+        "quant_time_s": 0.4701,
+        "build_time_s": 2.0635,
+        "convert_time_s": 0.024399999999999998,
+        "explore_time_s": 1.2494,
+        "rerank_time_s": 0.3018,
+        "overall_time_s": 4.4437,
+        "recall_results": [
+            [
+                220,
+                0.7575
+            ]
+        ],
+        "best_recall": 0.7575
+    },
+    "mode7_slot12": {
+        "mode": "evp-asymmetric-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.21430000000000002,
+        "quant_time_s": 0.495,
+        "build_time_s": 2.3925,
+        "convert_time_s": 0.024399999999999998,
+        "explore_time_s": 1.0836,
+        "rerank_time_s": 0.2523,
+        "overall_time_s": 4.5685,
+        "recall_results": [
+            [
+                192,
+                0.7696
+            ]
+        ],
+        "best_recall": 0.7696
+    },
+    "mode7_slot13": {
+        "mode": "evp-asymmetric-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.21680000000000002,
+        "quant_time_s": 0.5239,
+        "build_time_s": 2.2429,
+        "convert_time_s": 0.0242,
+        "explore_time_s": 1.2399,
+        "rerank_time_s": 0.243,
+        "overall_time_s": 4.6115,
+        "recall_results": [
+            [
+                221,
+                0.8077
+            ]
+        ],
+        "best_recall": 0.8077
+    },
+    "mode7_slot14": {
+        "mode": "evp-asymmetric-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.219,
+        "quant_time_s": 0.5212,
+        "build_time_s": 2.7635,
+        "convert_time_s": 0.026199999999999998,
+        "explore_time_s": 1.2335999999999998,
+        "rerank_time_s": 0.2353,
+        "overall_time_s": 5.1231,
+        "recall_results": [
+            [
+                226,
+                0.8234999999999999
+            ]
+        ],
+        "best_recall": 0.8234999999999999
+    },
+    "mode7_slot15": {
+        "mode": "evp-asymmetric-rerank",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.21480000000000002,
+        "quant_time_s": 0.4699,
+        "build_time_s": 2.2457,
+        "convert_time_s": 0.0245,
+        "explore_time_s": 2.2488,
+        "rerank_time_s": 0.5311,
+        "overall_time_s": 5.9575,
+        "recall_results": [
+            [
+                384,
+                0.8565
+            ]
+        ],
+        "best_recall": 0.8565
+    }
+}

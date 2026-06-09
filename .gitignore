@@ -12,10 +12,3 @@ wheels/
 
 # Virtual environments
 .venv
-
-# Results — binary outputs not tracked; directory structure kept via .gitkeep
-results/
-deglib/
-datasets/
-input/
-output/
