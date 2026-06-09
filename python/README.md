@@ -1,48 +1,88 @@
-# deglib - SISAP 2026 Indexing Challenge Submission
+# deglib — SISAP 2026 Indexing Challenge Submission
 
-This repository contains the a submission for the [**SISAP 2026 Indexing Challenge**](https://sisap-challenges.github.io/2026/) Task 1 using the [**Dynamic Exploration Graph (DEG)**](https://github.com/Visual-Computing/DynamicExplorationGraph/tree/evp) in combination with [**EVP (Equi-Voronoi Polytope) quantisation**](https://github.com/MetricSearch/metric_space_rust).
+This repository contains the Python tooling for the [**SISAP 2026 Indexing Challenge**](https://sisap-challenges.github.io/2026/) submission using the [**Dynamic Exploration Graph (DEG)**](https://github.com/Visual-Computing/DynamicExplorationGraph/tree/evp) in combination with [**EVP (Equi-Voronoi Polytope) quantisation**](https://github.com/MetricSearch/metric_space_rust).
 
-The primary execution path is **Docker-based**: a single container clones, builds, and runs the optimised C++ binary `deglib_evp_task1`, while a Python runner handles dataset download, container lifecycle, and result parsing.
+The primary execution path is **Docker-based**: the Python runner handles dataset download, container lifecycle, resource limits, and result parsing. The C++ binary `deglib_sisap` runs inside the container.
 
-**Table of Contents**  
-- [Task Overview](#-task-overview)
-- [Dataset](#-dataset)
+**Table of Contents**
+- [Task 1 — Wikipedia BGE-M3 (k-NN Graph)](#-task-1--wikipedia-bge-m3-k-nn-graph)
+- [Task 2 — Llama-Dev (ANN Search)](#-task-2--llama-dev-ann-search)
 - [Quick Start](#-quick-start)
 - [Docker Details](#-docker-details)
 - [Python Runner API](#-python-runner-api)
-- [Benchmark Modes](#-benchmark-modes)
-- [CLI Parameters](#-cli-parameters)
+- [Benchmark & Submission Scripts](#-benchmark--submission-scripts)
 - [Benchmark Results](#-benchmark-results)
 - [Project Structure](#-project-structure)
-- [Smoke Test](#-smoke-test)
 - [Troubleshooting](#-troubleshooting)
 
 
-## 🏆 Task 1 Overview
+---
+
+## 🏆 Task 1 — Wikipedia BGE-M3 (k-NN Graph)
 
 | Parameter | Value |
 |---|---|
-| Dataset | [WIKIPEDIA BGE-M3](https://huggingface.co/datasets/SISAP-Challenges/SISAP2026) (6.35 M vectors, 1024-dim, normalised, FP16) |
-| Task | Approximate k-NN graph for k=15 (metric self-join) |
+| Dataset | [WIKIPEDIA BGE-M3](https://huggingface.co/datasets/SISAP-Challenges/SISAP2026) — FP16, 1024-dim, normalised |
+| Task | Approximate k-NN **graph** for k=15 (metric self-join) |
 | Distance metric | Dot product (inner product) |
 | Target recall | ≥ 0.8 average |
-| Evaluation | Wall-clock time (load + build + search + postprocessing) |
-| Hardware limit | **8 vCPUs, 24 GB RAM**, read-only dataset mount, 8 hours max |
+| Evaluation | Wall-clock time (load + build + explore + postprocessing) |
+| Hardware limit | **8 vCPUs, 24 GB RAM**, read-only dataset, 8 hours max |
 
-
-
-## 📦 Dataset
-
-The [Wikipedia BGE-M3 dataset](https://huggingface.co/datasets/SISAP-Challenges/SISAP2026) is downloaded automatically by the Python runner on first use (cached locally via HuggingFace Hub).
+### Task 1 Datasets
 
 | Size | File | Vectors |
 |---|---|---|
 | **small** (development) | `benchmark-dev-wikipedia-bge-m3-small.h5` | 200,000 |
-| **large** (evaluation) | `benchmark-dev-wikipedia-bge-m3.h5` | 6,350,000 |
+| **large** (submission) | `benchmark-dev-wikipedia-bge-m3.h5` | 6,350,000 |
 
-See [main.py](main.py) for a working end-to-end example.
+### Task 1 Benchmark Modes
+
+| Mode | Name | Description |
+|---|---|---|
+| `mode1` | `fp16` | FP16 build + FP16 explore |
+| `mode2` | `evp-linear` | EVP quantisation + brute-force linear search |
+| `mode3` | `evp` | EVP build + EVP explore (no rerank) |
+| `mode4` | `evp-rerank` | EVP build + EVP explore + FP16 rerank ⭐ |
+| `mode5` | `evp-build-fp16-external-search` | EVP build + FP16 external graph search |
+| `mode6` | `evp-asymmetric` | EVP build + asymmetric FP16-vs-EVP search |
+| `mode7` | `evp-asymmetric-rerank` | EVP build + asymmetric search + FP16 rerank ⭐ |
+
+⭐ Best recall/speed trade-off for the SISAP constraint (24 GB RAM, 8 CPU).
 
 
+---
+
+## 🏆 Task 2 — Llama-Dev (ANN Search)
+
+| Parameter | Value |
+|---|---|
+| Dataset | [Llama-Dev](https://huggingface.co/datasets/SISAP-Challenges/SISAP2026) — FP32, 128-dim |
+| Task | Approximate k-NN **search** for k=30 |
+| Distance metric | Inner product (converted to L2 space) |
+| Target recall | ≥ 0.8 average |
+| Evaluation | Wall-clock time (load + FLAS + build + search) |
+| Hardware limit | **8 vCPUs, 24 GB RAM**, graph built **single-threaded**, 8 hours max |
+
+### Task 2 Benchmark Modes
+
+| Mode | Name | Description |
+|---|---|---|
+| `mode1` | `baseline` | FP32 build + FP32 inner-product explore |
+| `mode2` | `fp16-build-fp16-explore` | FP16 build + FP16 IP explore |
+| `mode3` | `baseline-fp16` | FP32 build + FP16 IP explore |
+| `mode4` | `l2-converted` | FP32 L2(d+1) build + FP32 L2 explore |
+| `mode5` | `l2-fp16-ip` | FP32 L2(d+1) build + FP16 IP explore ⭐ |
+| `mode6` | `l2-fp16-l2` | FP32 L2(d+1) build + FP16 L2 explore |
+| `mode7` | `l2-fp16-d2` | FP32 L2(d+2) build + FP16 L2 explore ⭐ |
+
+⭐ Submission candidates — best recall/speed trade-off.
+
+> **Note:** For Task 2, graph construction is always single-threaded (`build_threads=1`),
+> while query exploration uses all available CPU threads.
+
+
+---
 
 ## 🚀 Quick Start
 
@@ -50,70 +90,77 @@ See [main.py](main.py) for a working end-to-end example.
 - [Docker Desktop](https://docs.docker.com/get-docker/) (or Docker Engine on Linux)
 - [uv](https://astral.sh/uv) (handles Python installation automatically)
 
-### 1. Install Python dependencies
+### Install dependencies
 ```bash
 git clone https://github.com/Visual-Computing/sisap26-deglib
-cd sisap26-deglib
+cd sisap26-deglib/python
 uv sync
 ```
 
-### 2. Run — via Python (recommended)
-The Python runner handles image build, dataset download, container lifecycle, and logging — all in one step.
+### Run a benchmark
+```bash
+# Task 1 — small dataset
+uv run python benchmark_task1_small.py
+
+# Task 1 — large dataset
+uv run python benchmark_task1_large.py
+
+# Task 2 — Llama-Dev
+uv run python benchmark_task2.py
+```
+
+### Run submission scripts
+```bash
+# Task 1 — small dataset submission configurations
+uv run python submission_task1_small.py
+
+# Task 1 — large dataset submission configurations
+uv run python submission_task1_large.py
+
+# Task 2 — Mode 5 & Mode 7 with FLAS
+uv run python submission_task2.py
+```
+
+### Run with AVX2-optimised image
+If `FORCE_AVX2` is set as an environment variable, the runner automatically switches to the
+`sisap26-deglib-cpp:avx2` Docker image (built with `-DFORCE_AVX2=ON`):
 
 ```bash
-uv run python main.py
+# Inline — single command only
+FORCE_AVX2=1 uv run python submission_task2.py
+
+# Persistent — all commands in this shell session
+export FORCE_AVX2=1
+uv run python benchmark_task1_small.py
+uv run python submission_task1_large.py
 ```
 
-Or in your own script:
-```python
-from docker_runner import Task1Runner
-
-runner = Task1Runner()
-runner.build_image()        # builds the Docker image only if missing
-
-# Automatically downloads the small dataset from HuggingFace (first run only)
-result = runner.run(mode="mode4", size="small", threads=8, max_dist=200, evp_k=50)
-
-print(f"Recall@15 : {result.best_recall:.4f}")
-print(f"Overall   : {result.overall_time_s:.1f} s")
+When `FORCE_AVX2` is set the runner prints:
+```
+[Task1Runner] FORCE_AVX2 detected — switching image to 'sisap26-deglib-cpp:avx2'
 ```
 
-### 3. Run — manually (docker build + docker run)
-Only needed if you want to run the container without Python, e.g. in a restricted environment:
-
-```bash
-docker build -t sisap26-deglib-cpp .
-```
-
-```bash
-docker run \
-    --cpus=8 \
-    --memory=24g \
-    --memory-swap=24g \
-    --memory-swappiness=0 \
-    --volume "$(python -c 'from docker_runner import Task1Runner; print(Task1Runner().get_data_dir())'):/data:ro" \
-    --volume "$(pwd)/results:/results:rw" \
-    sisap26-deglib-cpp \
-    task1 /data/benchmark-dev-wikipedia-bge-m3-small.h5 evp-rerank \
-    --threads 8 --max-dist 200 --evpK 50
-```
+> **Note:** The AVX2 image must be built at least once. `build_image()` detects the `:avx2`
+> tag and passes `FORCE_AVX2=ON` as a Docker build argument automatically.
 
 
+---
 
 ## 🐳 Docker Details
+
+### Images
+
+| Tag | Build flags | Use case |
+|---|---|---|
+| `sisap26-deglib-cpp` | default (`-march=native`) | Standard image |
+| `sisap26-deglib-cpp:avx2` | `FORCE_AVX2=ON` | Explicit AVX2 (e.g. for deployment on different hardware) |
 
 ### Multi-stage Dockerfile
 
 | Stage | Base | Purpose |
 |---|---|---|
-| `builder` | `ubuntu:24.04` | Clones repo, installs `cmake g++`, compiles with `-march=native` |
-| `runtime` | `ubuntu:24.04` | Copies only the binary; minimal footprint |
-
-**CMake flags used:**
-```
--DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-march=native"
-```
-- `-march=native` → compiles the binary optimized specifically for the host CPU (enabling AVX2, AVX-512, etc. depending on machine capabilities)
+| `builder` | `ubuntu:24.04` | Clones repo, installs `cmake g++`, compiles |
+| `runtime` | `ubuntu:24.04` | Copies only the binary — minimal footprint |
 
 ### Container Limits (SISAP-compliant)
 ```bash
@@ -130,74 +177,68 @@ docker run \
 | `./results` | `/results` | **read-write** |
 
 
+---
 
 ## 🐍 Python Runner API
 
-### Full example (see also [main.py](main.py))
+### Task 1 Runner
 
 ```python
 from pathlib import Path
 from docker_runner import Task1Runner
 
-runner = Task1Runner(
-    image_tag="sisap26-deglib",        # Docker image name
-    results_dir=Path("./results"),        # local folder → mounted as /results:rw
-    echo_logs=True,                       # stream container logs to stdout
-)
-
-# Build the image (skipped if already exists; use force=True to rebuild)
+runner = Task1Runner(results_dir=Path("./results"), echo_logs=True)
 runner.build_image(force=False)
 
-# Run mode4 on the small dataset with a max_dist sweep
+# Thread count comes from the container CPU limit (runner.cpu_limit)
+num_threads = runner.cpu_limit
+
 result = runner.run(
-    mode="mode4",
-    size="small",                         # downloads dataset automatically if needed
-    threads=8,
-    max_dist="100,200,300",              # comma-separated → recall sweep
+    mode="evp-rerank",
+    size="small",           # "small" (200K) or "large" (6.35M)
+    threads=num_threads,
+    max_dist="100,200,300", # comma-separated → recall sweep
     evp_k=50,
 )
 
-# Structured results
 if result.succeeded:
-    print(f"SIMD          : {result.simd_info}")
-    print(f"Load          : {result.load_time_s:.1f} s")
-    print(f"Quantisation  : {result.quant_time_s:.1f} s")
-    print(f"Build         : {result.build_time_s:.1f} s")
-    print(f"Explore       : {result.explore_time_s:.1f} s")
-    print(f"Rerank        : {result.rerank_time_s:.1f} s")
-    print(f"Total         : {result.overall_time_s:.1f} s")
-    print()
-    for max_dist, recall in result.recall_results:
-        print(f"  max_dist={max_dist:>4}  →  Recall@15 = {recall:.4f}")
-else:
-    print(f"Container failed with exit code {result.exit_code}")
+    print(f"Recall@15 : {result.best_recall:.4f}")
+    print(f"Total     : {result.overall_time_s:.1f} s")
 ```
 
-### `runner.build_image()` parameters
+### Task 2 Runner
 
-| Parameter | Default | Description |
-|---|---|---|
-| `tag` | `None` | Override the image tag. Defaults to the tag passed to the constructor. |
-| `force` | `False` | When `True`, force a fresh build with all caches disabled. |
+```python
+from pathlib import Path
+from docker_runner import Task2Runner
 
-### `runner.run()` parameters
+runner = Task2Runner(results_dir=Path("./results"), echo_logs=True)
+runner.build_image(force=False)
 
-| Parameter | Default | Description |
-|---|---|---|
-| `mode` | — | Benchmark mode: `"mode1"`–`"mode7"` or alias (e.g. `"evp-rerank"`) |
-| `size` | `"small"` | Dataset: `"small"` (200 K) or `"large"` (6.35 M) |
-| `threads` | `8` | `--threads` |
-| `non_zeros` | `600` | `--non-zeros` (EVP sparsity) |
-| `k_top` | `15` | `--k-top` |
-| `k_graph` | `32` | `--k-graph` (graph degree) |
-| `max_dist` | `200` | `--max-dist` — int or comma-separated sweep string |
-| `evp_k` | `50` | `--evpK` — candidate pool for reranking |
-| `prune_worst` | `16` | `--prune-worst` |
-| `no_recall` | `False` | `--no-recall` |
-| `output` | `None` | `--output <path inside container>` |
-| `graph` | `None` | `--graph <path inside container>` |
+num_threads = runner.cpu_limit
 
-For detailed descriptions of each flag see [CLI Parameters](#-cli-parameters).
+result = runner.run(
+    mode="mode5",
+    threads=num_threads,
+    build_threads=1,        # Task 2: graph always built single-threaded
+    max_dist="5000,6000,7000,8000",
+    eps_search="0.18",
+    num_runs=10,
+    use_flas=True,
+)
+
+if result.succeeded:
+    print(f"Recall@30 : {result.best_recall:.4f}")
+    print(f"Total     : {result.overall_time_s:.1f} s")
+```
+
+### `runner.cpu_limit`
+
+Returns the number of CPU threads allocated to the container (derived from the SISAP resource limit `--cpus=8`). Always use this instead of `os.cpu_count()` — the container environment may report a different value.
+
+```python
+num_threads = runner.cpu_limit  # → 8
+```
 
 ### `Task1Result` fields
 
@@ -218,161 +259,115 @@ result.succeeded          # bool
 result.to_dict()          # dict for JSON serialisation
 ```
 
+### `Task2Result` fields
 
-
-## 🔧 Task 1 Benchmark Modes
-
-| Mode | Name | Description |
-|---|---|---|
-| `mode1` | `fp16` / `fp16-build-fp16-explore` | FP16 build + FP16 explore |
-| `mode2` | `evp-linear` / `evp-linear-search` | EVP quantisation + brute-force linear search |
-| `mode3` | `evp` / `evp-build-evp-explore` | EVP build + EVP explore (no rerank) |
-| `mode4` | `evp-rerank` / `evp-build-evp-explore-fp16-rerank` | EVP build + EVP explore + FP16 rerank ⭐ |
-| `mode5` | `evp-build-fp16-external-search` | EVP build + FP16 external graph search |
-| `mode6` | `evp-asymmetric` / `evp-build-fp16-asymmetric-search` | EVP build + asymmetric FP16-vs-EVP search |
-| `mode7` | `evp-asymmetric-rerank` / `evp-build-fp16-asymmetric-search-rerank` | EVP build + asymmetric search + FP16 rerank ⭐ |
-
-⭐ Best recall/speed trade-off for the SISAP constraint (24 GB RAM, 8 CPU).
-
-| Category | Subcategory | mode1 | mode2 | mode3 | mode4 | mode5 | mode6 | mode7 | mode8 |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Graph Construction** | no graph / linear search | | X | | | | | | |
-| | EVP | | | X | X | X | X | X | X |
-| | int 8 | | | | | | | | |
-| | float 16 | X | | | | | | | |
-| **Search Vector** | EVP | | X | X | X | | X | X | X |
-| | int 8 | | | | | | | | |
-| | float 16 | X | | | | X | | | |
-| **Query Vector** | EVP | | X | X | X | | | | X |
-| | int 8 | | | | | | | | |
-| | float 16 | X | | | | X | X | X | |
-| **Reranking** | no | X | X | X | | X | X | | |
-| | int 8 | | | | | | | | X |
-| | float 16 | | | | X | | | X | |
-
-## 🔧 Task 2 Benchmark Modes
-
-| Mode | Name | Description |
-|---|---|---|
-| `mode1` | `baseline` / `fp32-build-fp32-explore` | Builds a SizeBoundedGraph using FP32 features (Metric::InnerProduct) and explores via FP32 inner-product similarity. Serves as the high-quality baseline. |
-| `mode2` | `fp16-build-fp16-explore` | Builds the graph with FP16 features and explores via FP16 inner-product similarity. |
-| `mode3` | `baseline-fp16` / `fp32-build-fp16-explore` | Builds the graph with FP32 features and explores via FP16 inner-product similarity. |
-| `mode4` | `l2-converted` / `fp32-build-l2-explore` | Builds the graph with FP32 features converted to L2 space (dimension d+1) and explores via FP32 L2 similarity. |
-| `mode5` | `l2-fp16-ip` / `l2-build-fp16-ip-explore` | Builds the graph with FP32 features converted to L2 space (dimension d+1) and explores via FP16 Inner Product similarity. |
-| `mode6` | `l2-fp16-l2` / `l2-build-fp16-l2-explore` | Builds the graph with FP32 features converted to L2 space (dimension d+1) and explores via FP16 L2 similarity. |
-| `mode7` | `l2-fp16-d2` / `l2-build-fp16-d2-explore` | Builds the graph with FP32 features converted to L2-converted space (dimension d+2) and explores via FP16 L2 similarity. |
-
-## 🔧 CLI Parameters
-
+```python
+result.best_recall        # float | None — highest recall across sweep
+result.sweep_points       # list[dict] — [{eps_search, max_dist, recall, search_time_ms}]
+result.overall_time_s     # float | None
+result.load_time_s        # float | None
+result.build_time_s       # float | None
+result.flas_time_s        # float | None
+result.simd_info          # str — e.g. "AVX2, SSE"
+result.exit_code          # int
+result.succeeded          # bool
+result.to_dict()          # dict for JSON serialisation
 ```
-  --threads <n>      Number of CPU worker threads used for parallel EVP quantization,
-                     even-regular graph construction, and query exploration (default: 6).
-  --non-zeros <n>    EVP Quantization sparsity parameter. Specifies the exact number of non-zero
-                     elements in each quantized sparse vector (default: 600).
-  --k-top <n>        The final number of nearest neighbors (top-K) retrieved per query
-                     and evaluated for recall or written to the output file (default: 15).
-  --k-graph <n>      The degree of the regular graph. Specifies the exact number of edges
-                     (neighbors) per vertex. Must be an even integer >= 4 (default: 32).
-  --k-ext <n>        The search size (k-top parameter) used during graph construction. Decides
-                     how many good neighbors are shown to each newly added node, from which it
-                     selects nodes to connect with up to k-graph (default: 32).
-  --eps-ext <f>      Search expansion parameter used together with k-ext during graph construction.
-                     Decides if nodes whose distance is slightly worse (e.g. 0.01 = 1%) than the
-                     current worst in the search list should be explored (default: 0.001).
-  --no-recall        Disables loading ground-truth datasets and calculating Recall@K metrics.
-                     Required when exporting search results to an output file.
-  --output <path>    Path to a binary `.ivecs` file where the retrieved nearest-neighbor indices
-                     will be saved (one row per query; uint32_t count followed by indices).
-  --evpK <list>      Candidate pool size or comma-separated list of sizes. Graph search retrieves `evpK` candidates
-                     which are then reranked using exact FP16 inner product. Used in Mode 4 and Mode 7 (default: 50).
-  --max-dist <list>  Exploration search budget or comma-separated list of budgets. Specifies the maximum number of
-                     distance computations allowed per query. Main parameter to trade search speed for recall (default: 200).
-  --graph <path>     File path to save the pre-built graph to, or load a pre-built graph from
-                     to bypass the construction phase.
-  --prune-worst <n>  Number of worst (least similar) neighbors per vertex to replace with self-loops.
-                     Applies to all modes (default: 16).
-```
+
+
+---
+
+## 📊 Benchmark & Submission Scripts
+
+| Script | Task | Dataset | Output |
+|---|---|---|---|
+| `benchmark_task1_small.py` | Task 1 | small (200K) | `results/benchmark/task1_small/` |
+| `benchmark_task1_large.py` | Task 1 | large (6.35M) | `results/benchmark/task1_large/` |
+| `benchmark_task2.py` | Task 2 | Llama-Dev | `results/benchmark/task2/` |
+| `submission_task1_small.py` | Task 1 | small (200K) | `results/submission/task1_small/` |
+| `submission_task1_large.py` | Task 1 | large (6.35M) | `results/submission/task1_large/` |
+| `submission_task2.py` | Task 2 | Llama-Dev | `results/submission/task2/` |
+
+Each script saves three artefacts:
+- `results.json` — full structured results for further processing
+- `results.md` — human-readable Markdown summary table
+- `recall_vs_time.png` — Recall vs Search Time plot
+
+
+---
 
 ## 📊 Benchmark Results
 
-To reproduce the small-dataset table on your own hardware:
-```bash
-uv run python benchmark_task1_small.py
+Benchmark results are **not stored in this README** to avoid stale data.
+After running a benchmark or submission script, find the current results in the `results/` directory:
+
+```
+results/
+├── benchmark/
+│   ├── task1_small/
+│   │   ├── results.json
+│   │   ├── results.md
+│   │   └── recall_vs_time.png
+│   ├── task1_large/
+│   │   └── ...
+│   └── task2/
+│       └── ...
+└── submission/
+    ├── task1_small/
+    │   └── ...
+    ├── task1_large/
+    │   └── ...
+    └── task2/
+        └── ...
 ```
 
-### Small dataset (200K vectors, AMD Ryzen 5 5600G, AVX2, 32 GB RAM)
 
-| Mode | Method | Settings | Load | Quant | Build | Convert | Explore | Rerank | Total | Recall |
-|:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1 | FP16 Build+Explore | `M=32, MaxDist=100` | 0.6 s | 0.0 s | 18.9 s | 0.1 s | 1.5 s | 0.0 s | 21.3 s | 0.8539 |
-| 2 | EVP linear search | — | 0.6 s | 0.8 s | 0.0 s | 0.0 s | 209.3 s | 0.0 s | 211 s | 0.7124 |
-| 3 | EVP Build+Explore | `M=32, MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 0.9 s | 0.0 s | 7.1 s | 0.6814 |
-| 4 | EVP Build+Explore+Rerank | `M=32, MaxDist=200, evpK=50` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.2 s | 0.9 s | 8.3 s | 0.8418 |
-| 5 | EVP build+FP16 Explore | `M=32, MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.2 s | 3.4 s | 0.0 s | 10.0 s | 0.8483 |
-| 6 | EVP build+Asym Explore | `M=32, MaxDist=200` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.3 s | 0.0 s | 7.5 s | 0.7376 |
-| 7 | EVP build+Asym+Rerank | `M=32, MaxDist=200, evpK=50` | 0.6 s | 0.8 s | 4.8 s | 0.0 s | 1.6 s | 0.9 s | 8.7 s | 0.8483 |
-
-### Large dataset (6.35M vectors, AMD Ryzen 5 5600G, AVX2, 32 GB RAM)
-
-| Mode | Method | Settings | Load | Quant | Build | Convert | Explore | Rerank | Total | Recall |
-|:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1 | FP16 Build+Explore | `M=32, MaxDist=100` | 15 s | 0 s | 816 s | 0 s | 55 s | 0 s | 886 s | 0.7686 |
-| 3 | EVP Build+Explore | `M=32, MaxDist=200` | 15 s | 22 s | 265 s | 0 s | 40 s | 0 s | 340 s | 0.6447 |
-| 4 | EVP Build+Explore+Rerank | `M=32, MaxDist=200, evpK=50` | 15 s | 22 s | 265 s | 0 s | 55 s | 20 s | 377 s | 0.7632 |
-| 5 | EVP build+FP16 Explore | `M=32, MaxDist=200` | 15 s | 22 s | 265 s | 4 s | 125 s | 0 s | 431 s | 0.7687 |
-| 6 | EVP build+Asym Explore | `M=32, MaxDist=200` | 15 s | 22 s | 265 s | 2 s | 57 s | 0 s | 361 s | 0.6880 |
-| 7 | EVP build+Asym+Rerank | `M=32, MaxDist=200, evpK=50`  | 15 s | 22 s | 265 s | 2 s | 72 s | 20 s | 396 s | 0.7676 |
-
-
-
+---
 
 ## 🗂️ Project Structure
 
 ```
-sisap26-deglib/
-├── Dockerfile                   # Multi-stage: clone evp → cmake → binary
-├── main.py                      # End-to-end example using Task1Runner
-├── benchmark_task1_small.py     # Reproduce the small-dataset benchmark table
-├── benchmark_task1_large.py     # Reproduce the large-dataset benchmark table
-├── PLAN.md                      # Detailed implementation plan
-├── SISAP_2026_Task1.md          # SISAP 2026 task specification (German)
+python/
+├── benchmark_task1_small.py     # Benchmark all modes — small dataset
+├── benchmark_task1_large.py     # Benchmark all modes — large dataset
+├── benchmark_task2.py           # Benchmark all Task 2 modes
+├── submission_task1_small.py    # Submission configs — Task 1 small
+├── submission_task1_large.py    # Submission configs — Task 1 large
+├── submission_task2.py          # Submission configs — Task 2 (Mode 5 & 7 + FLAS)
 │
 ├── docker_runner/               # Python package for Docker-based runs
-│   ├── __init__.py              # Public API: Task1Runner, Task1Result
+│   ├── __init__.py              # Public API: Task1Runner, Task2Runner, Task1Result, Task2Result
 │   ├── runner.py                # HuggingFace download + container management
 │   ├── log_parser.py            # Real-time log parsing (timing, recall)
-│   └── result.py                # Task1Result dataclass
+│   └── result.py                # Task1Result / Task2Result dataclasses
 │
-├── results/
-│   └── task1/                   # Output files (mounted as /results:rw)
-│       └── .gitkeep
+├── results/                     # All output files (mounted as /results:rw inside container)
+│   ├── benchmark/
+│   │   ├── task1_small/
+│   │   ├── task1_large/
+│   │   └── task2/
+│   └── submission/
+│       ├── task1_small/
+│       ├── task1_large/
+│       └── task2/
 │
 ├── pyproject.toml               # Python project config (uv)
 ├── uv.lock
-└── .gitignore
+└── README.md
 ```
 
 
-
-## 🧪 Smoke Test
-
-Verify the binary runs correctly (no dataset needed):
-```bash
-docker build -t sisap26-deglib .
-docker run --rm sisap26-deglib
-# Expected: usage help on stderr, exit code 1
-```
+---
 
 ## 🔧 Troubleshooting
 
 | Problem | Command |
 |---|---|
-| **Cached layers verwenden alte Version** — Build erzwingen ohne Cache | `docker build --no-cache -t sisap26-deglib .` oder `runner.build_image(force=True)` |
-| **Image erneut bauen** (Cache wo möglich nutzen) | `docker build -t sisap26-deglib .` |
-| **Altes Image löschen** | `docker image rm sisap26-deglib` |
-| **Alle Zwischen-Images und Bauteile aufräumen** | `docker builder prune -f` |
-| **Kompaktes Image — History anzeigen** | `docker history sisap26-deglib:latest` |
-| **Container-Logs bei Fehlern ansehen** (nach `exit code`) | `docker logs <container-id>` |
-| **Laufenden Container sehen & stoppen** | `docker ps` → `docker stop <container-id>` |
-| **Alle Container & Volumes restlos löschen** | `docker system prune -a --volumes` |
-
+| **Build erzwingen ohne Cache** | `docker build --no-cache -t sisap26-deglib-cpp .` oder `runner.build_image(force=True)` |
+| **AVX2-Image bauen** | `FORCE_AVX2=1 uv run python benchmark_task1_small.py` (baut automatisch `:avx2` image) |
+| **Altes Image löschen** | `docker image rm sisap26-deglib-cpp` |
+| **Alle Zwischen-Images aufräumen** | `docker builder prune -f` |
+| **Container-Logs ansehen** | `docker logs <container-id>` |
+| **Laufenden Container stoppen** | `docker ps` → `docker stop <container-id>` |
+| **Alle Container & Volumes löschen** | `docker system prune -a --volumes` |
+| **OOM (exit code 137) bei large** | Einzelne Modi sequenziell ausführen; `submission_task1_large.py` lädt gespeicherten Graph wieder |

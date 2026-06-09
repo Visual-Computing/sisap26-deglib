@@ -21,6 +21,7 @@ Volume mounts:
 """
 from __future__ import annotations
 
+import os
 import sys
 import threading
 from pathlib import Path
@@ -58,8 +59,9 @@ _MEM_LIMIT: int = 24 * 1024**3         # --memory=24g
 _MEM_SWAP: int  = 24 * 1024**3         # --memory-swap=24g  (= RAM limit → no swap)
 _SWAPPINESS: int = 0                    # --memory-swappiness=0
 
-# Default Docker image tag
-_DEFAULT_IMAGE = "sisap26-deglib-cpp"
+# Default Docker image tag (base name, without variant suffix)
+_DEFAULT_IMAGE      = "sisap26-deglib-cpp"
+_DEFAULT_IMAGE_AVX2 = "sisap26-deglib-cpp:avx2"
 
 
 # ---------------------------------------------------------------------------
@@ -93,6 +95,16 @@ class BaseRunner:
         results_dir: Path | None = None,
         echo_logs: bool = True,
     ) -> None:
+        # If the caller did not pin an explicit non-default tag and FORCE_AVX2 is
+        # set in the environment, silently switch to the AVX2-optimised image so
+        # that every script benefits without needing manual tag overrides.
+        if image_tag == _DEFAULT_IMAGE and os.environ.get("FORCE_AVX2"):
+            image_tag = _DEFAULT_IMAGE_AVX2
+            print(
+                f"[{self.__class__.__name__}] FORCE_AVX2 detected — "
+                f"switching image to '{image_tag}'",
+                flush=True,
+            )
         self.image_tag = image_tag
 
         # Resolve project root relative to this file: docker_runner/ → project/
