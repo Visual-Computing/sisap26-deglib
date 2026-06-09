@@ -103,7 +103,7 @@ def main() -> None:
     args = ap.parse_args()
 
     jobs = build_jobs()
-    runner = Task1Runner(image_tag="sisap26-deglib", results_dir=RES, echo_logs=False)
+    runner = Task1Runner(image_tag="sisap26-deglib-cpp", results_dir=RES, echo_logs=False)
     out_path = Path(args.out)
     new_file = not out_path.exists()
     t0 = time.time()

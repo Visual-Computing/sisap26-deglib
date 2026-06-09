@@ -28,8 +28,7 @@ from docker_runner import Task1Runner
 
 def main() -> None:
     runner = Task1Runner(
-        image_tag="sisap26-deglib",
-        results_dir=Path("./results"),
+        results_dir=Path(__file__).parent / "results",
         echo_logs=True,   # print every container log line as it arrives
     )
 
@@ -47,7 +46,7 @@ def main() -> None:
     size = "small"   # switch to "large" for the full 6.35 M vector dataset
     print(f"\n[1/2] Resolving {size!r} dataset …")
     data_path = runner.get_dataset_path(size=size)
-    print(f"      → {data_path}")
+    print(f"      -> {data_path}")
 
     # ------------------------------------------------------------------ #
     # Run                                                                  #
@@ -86,8 +85,8 @@ def main() -> None:
     if result.recall_results:
         print("  Recall sweep:")
         for max_dist, recall in result.recall_results:
-            bar = "⭐" if recall >= 0.80 else "  "
-            print(f"    max_dist={max_dist:>4}  →  Recall@15 = {recall:.4f}  {bar}")
+            bar = "*" if recall >= 0.80 else "  "
+            print(f"    max_dist={max_dist:>4}  ->  Recall@15 = {recall:.4f}  {bar}")
     else:
         print("  No recall results (was --no-recall set?)")
 

@@ -82,7 +82,7 @@ def main() -> None:
     wanted = set(args.configs.split(",")) if args.configs else None
     configs = [c for c in BUILD_CONFIGS if (wanted is None or c[0] in wanted)]
 
-    runner = Task1Runner(image_tag="sisap26-deglib", results_dir=RES, echo_logs=True)
+    runner = Task1Runner(image_tag="sisap26-deglib-cpp", results_dir=RES, echo_logs=True)
     out_path = Path(args.out)
     new_file = not out_path.exists()
 

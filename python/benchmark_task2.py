@@ -25,7 +25,7 @@ FILENAME = "llama-dev/llama-dev.h5"
 
 # Input options: Set LOAD_GRAPH = True to load a pre-built graph instead of building a new one
 LOAD_GRAPH = False
-LOAD_GRAPH_PATH = "results/llama_dev_deg.graph"
+LOAD_GRAPH_PATH = str(Path(__file__).parent / "results/llama_dev_deg.graph")
 
 # Sorting order for train vectors: SortOrder.ORIGINAL, SortOrder.SHUFFLE, SortOrder.FLAS
 # (Ignored if LOAD_GRAPH is True)
@@ -62,7 +62,7 @@ EPS_SWEEP = [0.1, 0.15, 0.2, 0.25, 0.3]
 
 # Output options
 SAVE_GRAPH = False
-SAVE_GRAPH_PATH = "results/llama_dev_deg.graph"
+SAVE_GRAPH_PATH = str(Path(__file__).parent / "results/llama_dev_deg.graph")
 # ==============================================================================
 
 

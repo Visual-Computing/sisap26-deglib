@@ -46,7 +46,7 @@ for c in cands:
     key = (c["mode"], int(c["k_graph"]), int(c["non_zeros"]), int(c["k_ext"]), int(c["prune_worst"]))
     groups.setdefault(key, []).append(c)
 
-runner = Task1Runner(image_tag="sisap26-deglib:avx2", results_dir=RES, echo_logs=False)
+runner = Task1Runner(image_tag="sisap26-deglib-cpp:avx2", results_dir=RES, echo_logs=False)
 avx2: dict[tuple, tuple] = {}   # (mode,kg,md,evpK) -> (recall, total_s)
 
 for (mode, kg, nz, kext, pw), members in groups.items():

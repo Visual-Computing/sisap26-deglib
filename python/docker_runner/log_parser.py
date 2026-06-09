@@ -36,16 +36,21 @@ if TYPE_CHECKING:
 # SIMD: AVX-512, AVX2, SSE  |  SIMD: AVX2, SSE  |  SIMD: none (scalar)
 _RE_SIMD = re.compile(r"SIMD\s*:\s*(.+)", re.IGNORECASE)
 
-# "load time        :   0.6 s"  →  group(1)="load", group(2)="0.6"
+# Match timings in seconds or milliseconds (e.g. "Load Time: 8958.8 ms" or "Total Elapsed Time: 17.9 s")
 _RE_TIME = re.compile(
-    r"(load|quantization|quant|quantize|build|convert|conversion|explore|rerank|overall|total\s+elapsed)\s*time\s*:\s*([\d.]+)\s*s",
+    r"(load|quantization|quant|quantize|graph\s+build|build|graph\s+conversion|convert|conversion|pruning|prune|explore|rerank|overall|total\s+elapsed)\s*time\s*:\s*([\d.]+)\s*(ms|s)?",
     re.IGNORECASE,
 )
 
-# "Recall@15        : 0.8249  (max_dist=200)"
-# Handles optional trailing "(max_dist=NNN)" annotation
+# "evpK=50, max_dist=100 has recall 78.83 % and time 1.6 s"
+_RE_SWEEP_LINE = re.compile(
+    r"evpK=\d+,\s*max_dist=(\d+)\s*has\s*recall\s*([\d.]+)\s*%",
+    re.IGNORECASE,
+)
+
+# "Recall@15:               84.21 %"
 _RE_RECALL = re.compile(
-    r"Recall@\d+\s*:\s*([\d.]+)(?:.*?max_dist\s*=\s*(\d+))?",
+    r"Recall@\d+\s*:\s*([\d.]+)(?:\s*%)?(?:.*?max_dist\s*=\s*(\d+))?",
     re.IGNORECASE,
 )
 
@@ -163,20 +168,34 @@ class Task1LogParser:
         if m:
             phase = m.group(1).lower()
             value = float(m.group(2))
+            unit = m.group(3).lower() if m.group(3) else "s"
+            if unit == "ms":
+                value /= 1000.0
             self._set_time(phase, value)
             return
 
-        # Recall@K
+        # Recall Sweep lines
+        m = _RE_SWEEP_LINE.search(line)
+        if m:
+            max_dist = int(m.group(1))
+            recall_val = float(m.group(2)) / 100.0
+            self.recall_results.append((max_dist, recall_val))
+            return
+
+        # Recall@K Summary
         m = _RE_RECALL.search(line)
         if m:
             recall_val = float(m.group(1))
+            if "%" in line or recall_val > 1.0:
+                recall_val /= 100.0
             if m.group(2):
                 max_dist = int(m.group(2))
+                self.recall_results.append((max_dist, recall_val))
             else:
-                # No annotation — use a monotonically increasing counter
-                self._last_max_dist += 1
-                max_dist = self._last_max_dist
-            self.recall_results.append((max_dist, recall_val))
+                if not self.recall_results:
+                    self._last_max_dist += 1
+                    max_dist = self._last_max_dist
+                    self.recall_results.append((max_dist, recall_val))
             return
 
         # Errors
@@ -189,17 +208,17 @@ class Task1LogParser:
             self._warnings.append(line)
 
     def _set_time(self, phase: str, value: float) -> None:
-        if phase in ("load",):
+        if "load" in phase:
             self.load_time_s = value
-        elif phase in ("quantization", "quant", "quantize"):
+        elif "quant" in phase:
             self.quant_time_s = value
-        elif phase in ("build",):
+        elif "build" in phase:
             self.build_time_s = value
-        elif phase in ("convert", "conversion"):
+        elif "convert" in phase or "conversion" in phase:
             self.convert_time_s = value
-        elif phase in ("explore",):
+        elif "explore" in phase:
             self.explore_time_s = value
-        elif phase in ("rerank",):
+        elif "rerank" in phase:
             self.rerank_time_s = value
-        elif phase in ("overall", "total elapsed"):
+        elif "overall" in phase or "total" in phase:
             self.overall_time_s = value

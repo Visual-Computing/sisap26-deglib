@@ -1,12 +1,12 @@
 """
-benchmark_task1_small.py — Reproduce the small-dataset benchmark table from README.
+benchmark_task1_large.py — Reproduce the large-dataset benchmark table from README.
 
-Runs all 7 modes sequentially on the small dataset (200K vectors) and prints
+Runs all 6 modes sequentially on the large dataset (6.4M vectors) and prints
 a Markdown table identical to the one in README.md so results can be compared.
 
 Usage
 -----
-    uv run python benchmark_task1_small.py
+    uv run python benchmark_task1_large.py
 
 Prerequisites
 -------------
@@ -35,7 +35,6 @@ class ModeConfig:
 
 MODES: list[ModeConfig] = [
     ModeConfig(name="mode1", mode="fp16", label="FP16 Build+Explore", settings="M=32, MaxDist=100", max_dist=100),
-    ModeConfig(name="mode2", mode="evp-linear", label="EVP linear search", settings="—"),
     ModeConfig(name="mode3", mode="evp", label="EVP Build+Explore", settings="M=32, MaxDist=200"),
     ModeConfig(name="mode4", mode="evp-rerank", label="EVP Build+Explore+Rerank", settings="M=32, MaxDist=200, evpK=50", evp_k=50),
     ModeConfig(name="mode5", mode="evp-build-fp16-external-search", label="EVP build+FP16 Explore", settings="M=32, MaxDist=200"),
@@ -66,7 +65,7 @@ def run_mode(runner: Task1Runner, cfg: ModeConfig) -> Task1Result | None:
     print(f"  Settings: {cfg.settings}")
     print(f"{'='*60}\n")
 
-    kwargs: dict = dict(mode=cfg.mode, max_dist=cfg.max_dist)
+    kwargs: dict = dict(mode=cfg.mode, size="large", max_dist=cfg.max_dist)
     if cfg.evp_k is not None:
         kwargs["evp_k"] = cfg.evp_k
 
@@ -85,7 +84,7 @@ def run_mode(runner: Task1Runner, cfg: ModeConfig) -> Task1Result | None:
 
 def print_table(results: dict[str, Task1Result]) -> None:
     print("\n" + "=" * 60)
-    print("  Benchmark Results — Small Dataset (200K vectors)")
+    print("  Benchmark Results — Large Dataset (6.4M vectors)")
     print("=" * 60)
 
     header = f"| {'Mode':<4} | {'Method':<30} | {'Settings':<35} | {'Load':>6} | {'Quant':>6} | {'Build':>6} | {'Convert':>6} | {'Explore':>6} | {'Rerank':>6} | {'Total':>6} | {'Recall':>7} |"
@@ -121,7 +120,7 @@ def print_table(results: dict[str, Task1Result]) -> None:
 
 
 def main() -> None:
-    runner = Task1Runner(results_dir=Path("./results"), echo_logs=True)
+    runner = Task1Runner(results_dir=Path(__file__).parent / "results", echo_logs=True)
     runner.build_image(force=False)
 
     results: dict[str, Task1Result] = {}

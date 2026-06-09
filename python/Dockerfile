@@ -29,16 +29,16 @@ WORKDIR /build/DynamicExplorationGraph/cpp
 #     matches the SISAP evaluation/target server (which has NO AVX-512).
 #     NOTE: in the AVX2 case -march=native must be dropped, otherwise it would
 #     re-enable AVX-512 regardless of the FORCE_AVX2 option.
-#   - ENABLE_BENCHMARKS stays ON so evp/ (deglib_evp_task1) is built.
+#   - ENABLE_BENCHMARKS stays ON so evp/ (deglib_sisap) is built.
 #   - DATA_PATH is intentionally omitted — the HDF5 path is passed at runtime.
-#   Build AVX2 image:  docker build --build-arg FORCE_AVX2=ON -t sisap26-deglib:avx2 .
+#   Build AVX2 image:  docker build --build-arg FORCE_AVX2=ON -t sisap26-deglib-cpp:avx2 .
 ARG FORCE_AVX2=OFF
 RUN if [ "$FORCE_AVX2" = "ON" ]; then \
         cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFORCE_AVX2=ON ; \
     else \
         cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-march=native" ; \
     fi \
-    && cmake --build build --target deglib_evp_task1 -j$(nproc)
+    && cmake --build build --target deglib_sisap -j$(nproc)
 
 # ============================================================
 # Stage 2: runtime — minimal image with only the binary
@@ -56,8 +56,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy only the compiled binary from the builder stage
 COPY --from=builder \
-    /build/DynamicExplorationGraph/cpp/build/bin/deglib_evp_task1 \
-    /usr/local/bin/deglib_evp_task1
+    /build/DynamicExplorationGraph/cpp/build/bin/deglib_sisap \
+    /usr/local/bin/deglib_sisap
 
 # Create the expected mount-points:
 #   /data    → dataset directory (mounted read-only by the caller)
@@ -69,6 +69,6 @@ RUN mkdir -p /data /results
 #       --cpus=8 --memory=24g --memory-swap=24g --memory-swappiness=0 \
 #       --volume "<hf_cache_dir>:/data:ro" \
 #       --volume "$(pwd)/results:/results:rw" \
-#       sisap26-deglib \
-#       /data/benchmark-dev-wikipedia-bge-m3-small.h5 mode4 --threads 8
-ENTRYPOINT ["/usr/local/bin/deglib_evp_task1"]
+#       sisap26-deglib-cpp \
+#       task1 /data/benchmark-dev-wikipedia-bge-m3-small.h5 mode4 --threads 8
+ENTRYPOINT ["/usr/local/bin/deglib_sisap"]

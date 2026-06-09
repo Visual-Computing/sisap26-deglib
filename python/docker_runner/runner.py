@@ -55,7 +55,7 @@ _MEM_SWAP: int  = 24 * 1024**3         # --memory-swap=24g  (= RAM limit → no 
 _SWAPPINESS: int = 0                    # --memory-swappiness=0
 
 # Default Docker image tag
-_DEFAULT_IMAGE = "sisap26-deglib"
+_DEFAULT_IMAGE = "sisap26-deglib-cpp"
 
 
 # ---------------------------------------------------------------------------
@@ -138,12 +138,32 @@ class Task1Runner:
                 f"Unknown dataset size {size!r}. Choose from: {list(DATASET_FILES)}"
             )
         filename = DATASET_FILES[size]
-        print(f"[Task1Runner] Resolving dataset '{size}': {filename}", flush=True)
-        local_path = hf_hub_download(
-            repo_id=REPO_ID,
-            filename=filename,
-            repo_type=REPO_TYPE,
-        )
+        
+        # Check local HF cache folder dynamically (safe, generic, and offline-friendly):
+        try:
+            hf_cache_dir = Path.home() / ".cache" / "huggingface" / "hub" / "datasets--sisap-challenges--SISAP2026"
+            if hf_cache_dir.exists():
+                for p in hf_cache_dir.rglob(filename):
+                    if p.is_file() and ".no_exist" not in p.parts:
+                        print(f"[Task1Runner] Found local cached dataset file at: {p}", flush=True)
+                        return p
+        except Exception:
+            pass
+
+        try:
+            local_path = hf_hub_download(
+                repo_id=REPO_ID,
+                filename=filename,
+                repo_type=REPO_TYPE,
+            )
+        except Exception:
+            print("[Task1Runner] HF Hub download failed. Falling back to local cache...", flush=True)
+            local_path = hf_hub_download(
+                repo_id=REPO_ID,
+                filename=filename,
+                repo_type=REPO_TYPE,
+                local_files_only=True,
+            )
         return Path(local_path)
 
     def get_data_dir(self, size: str = "small") -> Path:
@@ -295,6 +315,7 @@ class Task1Runner:
 
         # ---- Build CLI command -----------------------------------------------
         cmd: list[str] = [
+            "task1",
             container_hdf5,
             mode,
             "--threads",    str(threads),
@@ -336,7 +357,7 @@ class Task1Runner:
         }
 
         print(
-            f"[Task1Runner] Starting container — mode={mode!r}, size={size!r}, "
+            f"[Task1Runner] Starting container - mode={mode!r}, size={size!r}, "
             f"threads={threads}, max_dist={max_dist}",
             flush=True,
         )
@@ -344,8 +365,8 @@ class Task1Runner:
             f"[Task1Runner] Limits: cpus=8, memory=24g, swap=24g, swappiness=0",
             flush=True,
         )
-        print(f"[Task1Runner] Data mount : {mount_dir} → /data:ro", flush=True)
-        print(f"[Task1Runner] Results    : {self.results_dir} → /results:rw", flush=True)
+        print(f"[Task1Runner] Data mount : {mount_dir} -> /data:ro", flush=True)
+        print(f"[Task1Runner] Results    : {self.results_dir} -> /results:rw", flush=True)
 
         # ---- Start container and stream logs --------------------------------
         parser = Task1LogParser(echo=self.echo_logs)

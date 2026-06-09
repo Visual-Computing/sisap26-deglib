@@ -83,7 +83,7 @@ def study_name(mode: str) -> str:
 
 def make_runner() -> Task1Runner:
     return Task1Runner(
-        image_tag="sisap26-deglib",
+        image_tag="sisap26-deglib-cpp",
         results_dir=OUT_DIR / "container_results",
         echo_logs=False,
     )
