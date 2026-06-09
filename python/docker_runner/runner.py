@@ -139,41 +139,43 @@ class BaseRunner:
         """
         Return the local path to the cached HDF5 dataset file.
 
-        Downloads from HuggingFace on first call; subsequent calls are instant
-        because hf_hub_download checks the local cache first.
+        First checks the local HuggingFace cache using ``scan_cache_dir()`` so
+        no network call is needed when the file is already present.  Falls back
+        to a plain ``hf_hub_download()`` (which will trigger a download) only
+        when the file cannot be found locally.
         """
         if size not in self.DATASET_FILES:
             raise ValueError(
                 f"Unknown dataset size {size!r}. Choose from: {list(self.DATASET_FILES)}"
             )
         filename = self.DATASET_FILES[size]
-        
-        # Check local HF cache folder dynamically (safe, generic, and offline-friendly):
-        try:
-            hf_cache_dir = Path.home() / ".cache" / "huggingface" / "hub" / "datasets--sisap-challenges--SISAP2026"
-            if hf_cache_dir.exists():
-                search_filename = filename.split("/")[-1]
-                for p in hf_cache_dir.rglob(search_filename):
-                    if p.is_file() and ".no_exist" not in p.parts:
-                        print(f"[{self.__class__.__name__}] Found local cached dataset file at: {p}", flush=True)
-                        return p
-        except Exception:
-            pass
+        search_filename = filename.split("/")[-1]
 
+        # --- Step 1: look in the local HF cache (no network required) --------
         try:
-            local_path = hf_hub_download(
-                repo_id=REPO_ID,
-                filename=filename,
-                repo_type=REPO_TYPE,
-            )
-        except Exception:
-            print(f"[{self.__class__.__name__}] HF Hub download failed. Falling back to local cache...", flush=True)
-            local_path = hf_hub_download(
-                repo_id=REPO_ID,
-                filename=filename,
-                repo_type=REPO_TYPE,
-                local_files_only=True,
-            )
+            from huggingface_hub import scan_cache_dir
+            cache_info = scan_cache_dir()
+            for repo in cache_info.repos:
+                if repo.repo_id.lower() == REPO_ID.lower() and repo.repo_type == REPO_TYPE:
+                    for revision in repo.revisions:
+                        for cached_file in revision.files:
+                            if cached_file.file_name == search_filename:
+                                local_path = cached_file.file_path
+                                print(
+                                    f"[{self.__class__.__name__}] Found dataset in local HF cache: {local_path}",
+                                    flush=True,
+                                )
+                                return Path(local_path)
+        except Exception as exc:
+            print(f"[{self.__class__.__name__}] Cache scan failed ({exc}), will attempt download.", flush=True)
+
+        # --- Step 2: download from HuggingFace Hub ----------------------------
+        print(f"[{self.__class__.__name__}] Downloading '{filename}' from HuggingFace Hub...", flush=True)
+        local_path = hf_hub_download(
+            repo_id=REPO_ID,
+            filename=filename,
+            repo_type=REPO_TYPE,
+        )
         return Path(local_path)
 
     def get_data_dir(self, size: str) -> Path:
