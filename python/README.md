@@ -293,35 +293,6 @@ Each script saves three artefacts:
 - `results.md` — human-readable Markdown summary table
 - `recall_vs_time.png` — Recall vs Search Time plot
 
-
----
-
-## 📊 Benchmark Results
-
-Benchmark results are **not stored in this README** to avoid stale data.
-After running a benchmark or submission script, find the current results in the `results/` directory:
-
-```
-results/
-├── benchmark/
-│   ├── task1_small/
-│   │   ├── results.json
-│   │   ├── results.md
-│   │   └── recall_vs_time.png
-│   ├── task1_large/
-│   │   └── ...
-│   └── task2/
-│       └── ...
-└── submission/
-    ├── task1_small/
-    │   └── ...
-    ├── task1_large/
-    │   └── ...
-    └── task2/
-        └── ...
-```
-
-
 ---
 
 ## 🗂️ Project Structure
@@ -362,12 +333,11 @@ python/
 ## 🔧 Troubleshooting
 
 | Problem | Command |
-|---|---|
-| **Build erzwingen ohne Cache** | `docker build --no-cache -t sisap26-deglib-cpp .` oder `runner.build_image(force=True)` |
-| **AVX2-Image bauen** | `FORCE_AVX2=1 uv run python benchmark_task1_small.py` (baut automatisch `:avx2` image) |
-| **Altes Image löschen** | `docker image rm sisap26-deglib-cpp` |
-| **Alle Zwischen-Images aufräumen** | `docker builder prune -f` |
-| **Container-Logs ansehen** | `docker logs <container-id>` |
-| **Laufenden Container stoppen** | `docker ps` → `docker stop <container-id>` |
-| **Alle Container & Volumes löschen** | `docker system prune -a --volumes` |
-| **OOM (exit code 137) bei large** | Einzelne Modi sequenziell ausführen; `submission_task1_large.py` lädt gespeicherten Graph wieder |
+| --- | --- |
+| **Force build without cache** | `docker build --no-cache -t sisap26-deglib-cpp .` or `runner.build_image(force=True)` |
+| **Build AVX2 image** | `FORCE_AVX2=1 uv run python benchmark_task1_small.py` (automatically builds `:avx2` image) |
+| **Delete old image** | `docker image rm sisap26-deglib-cpp` |
+| **Clean up all intermediate images** | `docker builder prune -f` |
+| **View container logs** | `docker logs <container-id>` |
+| **Stop running container** | `docker ps` → `docker stop <container-id>` |
+| **Delete all containers & volumes** | `docker system prune -a --volumes` |
