@@ -160,19 +160,21 @@ def generate_outputs(results: dict[str, Task1Result], output_dir: Path, system_i
         if recall_val is None:
             continue
             
-        # Search Time = explore_time + rerank_time (in seconds)
-        search_time_s = (res.explore_time_s or 0.0) + (res.rerank_time_s or 0.0)
+        # Task 1: total time is what matters (everything runs sequentially on-the-fly)
+        total_time_s = res.overall_time_s
+        if total_time_s is None:
+            continue
         
         color = color_map.get(cfg.name, "tab:gray")
         plt.scatter(
-            search_time_s, recall_val * 100.0,
+            total_time_s, recall_val * 100.0,
             color=color, edgecolor="black", s=150, zorder=5, label=cfg.label
         )
         
         # Annotate point
         plt.annotate(
             cfg.name.upper(),
-            (search_time_s, recall_val * 100.0),
+            (total_time_s, recall_val * 100.0),
             textcoords="offset points",
             xytext=(0, 10),
             ha='center',
@@ -183,9 +185,9 @@ def generate_outputs(results: dict[str, Task1Result], output_dir: Path, system_i
 
     if has_points:
         plt.axhline(y=80.0, color="gray", linestyle="--", label="Target Recall (80%)")
-        plt.xlabel("Search Time (s)")
+        plt.xlabel("Total Time (s)")
         plt.ylabel("Recall @ 15 (%)")
-        plt.title("Task 1 Small Benchmark — Recall vs Search Time")
+        plt.title("Task 1 Small Benchmark — Recall vs Total Time")
         plt.legend(loc="lower right")
         plt.grid(True, which="both", linestyle=":", alpha=0.6)
         

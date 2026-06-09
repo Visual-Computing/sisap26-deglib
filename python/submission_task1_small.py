@@ -220,21 +220,23 @@ def generate_outputs(results: dict[str, Task1Result], output_dir: Path, system_i
         if recall_val is None:
             continue
             
-        # Search Time = explore_time + rerank_time (in seconds)
-        search_time_s = (res.explore_time_s or 0.0) + (res.rerank_time_s or 0.0)
+        # Task 1: total time is what matters (everything runs sequentially on-the-fly)
+        total_time_s = res.overall_time_s
+        if total_time_s is None:
+            continue
         
         mode_prefix = "mode4" if "mode4" in cfg.name else "mode7"
         color = color_map.get(mode_prefix, "tab:gray")
         
         plt.scatter(
-            search_time_s, recall_val * 100.0,
+            total_time_s, recall_val * 100.0,
             color=color, edgecolor="black", s=150, zorder=5, label=cfg.label
         )
         
         # Annotate slot number
         plt.annotate(
             str(i + 1),
-            (search_time_s, recall_val * 100.0),
+            (total_time_s, recall_val * 100.0),
             textcoords="offset points",
             xytext=(0, 10),
             ha='center',
@@ -246,12 +248,12 @@ def generate_outputs(results: dict[str, Task1Result], output_dir: Path, system_i
     if has_points:
         import matplotlib.ticker as ticker
         ax = plt.gca()
-        ax.xaxis.set_major_locator(ticker.MultipleLocator(0.5))
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
         
         plt.axhline(y=80.0, color="gray", linestyle="--", label="Target Recall (80%)")
-        plt.xlabel("Search Time (s)")
+        plt.xlabel("Total Time (s)")
         plt.ylabel("Recall @ 15 (%)")
-        plt.title("Task 1 Small Submission — Recall vs Search Time")
+        plt.title("Task 1 Small Submission — Recall vs Total Time")
         plt.grid(True, which="both", linestyle=":", alpha=0.6)
         
         plot_path = output_dir / "recall_vs_time.png"
