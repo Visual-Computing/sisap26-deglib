@@ -37,7 +37,7 @@ class ModeConfig:
 
 MODES: list[ModeConfig] = [
     ModeConfig(name="mode1", mode="fp16", label="FP16 Build+Explore", settings="M=32, MaxDist=100", max_dist=100),
-    ModeConfig(name="mode2", mode="evp-linear", label="EVP linear search", settings="—"),
+    # ModeConfig(name="mode2", mode="evp-linear", label="EVP linear search", settings="—"),
     ModeConfig(name="mode3", mode="evp", label="EVP Build+Explore", settings="M=32, MaxDist=200"),
     ModeConfig(name="mode4", mode="evp-rerank", label="EVP Build+Explore+Rerank", settings="M=32, MaxDist=200, evpK=50", evp_k=50),
     ModeConfig(name="mode5", mode="evp-build-fp16-external-search", label="EVP build+FP16 Explore", settings="M=32, MaxDist=200"),
@@ -241,7 +241,7 @@ def main() -> None:
 
     print_table(results)
     
-    output_dir = Path(__file__).parent / "results" / "task1_small"
+    output_dir = Path(__file__).parent / "results" / "benchmark" / "task1_small"
     generate_outputs(results, output_dir)
 
     print("Done.")

@@ -1,10 +1,10 @@
 """
-benchmark_task2.py — Run and plot Task 2 benchmark configurations.
+submission_task2.py — Run and plot Task 2 submission configurations.
 
-This script runs the 7 benchmark configurations on the llama-dev dataset,
+This script runs only the submission candidates for Task 2 (Mode 5 with FLAS and Mode 7 with FLAS),
 automatically identifies the best sweep point reaching >= 0.8 recall,
 generates a Recall vs Search Time plot, and saves all outputs
-(plot, JSON, and Markdown summary) to results/task2.
+(plot, JSON, and Markdown summary) to results/submission/task2.
 """
 from __future__ import annotations
 
@@ -36,62 +36,12 @@ class ModeConfig:
 
 MODES: list[ModeConfig] = [
     ModeConfig(
-        name="mode3_no_flas",
-        mode="mode3",
-        label="Mode 3: FP32 Build & FP16 Explore (no FLAS)",
-        settings="k_ext=64, k_graph=32, runs=3",
-        max_dist="15000,20000,25000,30000",
-        eps_search="0.25",
-        num_runs=3,
-        use_flas=False,
-    ),
-    ModeConfig(
-        name="mode3_flas",
-        mode="mode3",
-        label="Mode 3: FP32 Build & FP16 Explore (+ FLAS)",
-        settings="k_ext=64, k_graph=32, runs=3",
-        max_dist="15000,18000,20000,23000,25000,27000,30000",
-        eps_search="0.28",
-        num_runs=3,
-        use_flas=True,
-    ),
-    ModeConfig(
-        name="mode5_no_flas",
-        mode="mode5",
-        label="Mode 5: L2 Build (d+1) & FP16 IP Explore (no FLAS)",
-        settings="k_ext=64, k_graph=32, runs=10",
-        max_dist="5000,6000,7000,8000,9000,10000",
-        eps_search="0.18",
-        num_runs=10,
-        use_flas=False,
-    ),
-    ModeConfig(
         name="mode5_flas",
         mode="mode5",
         label="Mode 5: L2 Build (d+1) & FP16 IP Explore (+ FLAS)",
         settings="k_ext=64, k_graph=32, runs=10",
         max_dist="5000,6000,7000,8000",
         eps_search="0.18",
-        num_runs=10,
-        use_flas=True,
-    ),
-    ModeConfig(
-        name="mode4_flas",
-        mode="mode4",
-        label="Mode 4: L2 Build (d+1) & FP32 L2 Explore (+ FLAS)",
-        settings="k_ext=64, k_graph=32, runs=10",
-        max_dist="5000,5500,6000,6500,7000",
-        eps_search="0.008",
-        num_runs=10,
-        use_flas=True,
-    ),
-    ModeConfig(
-        name="mode6_flas",
-        mode="mode6",
-        label="Mode 6: L2 Build (d+1) & FP16 L2 Explore (+ FLAS)",
-        settings="k_ext=64, k_graph=32, runs=10",
-        max_dist="5000,5500,6000,6500,7000,8000,9000,10000",
-        eps_search="0.007",
         num_runs=10,
         use_flas=True,
     ),
@@ -162,17 +112,14 @@ def generate_outputs(results: dict[str, Task2Result], output_dir: Path) -> None:
     
     with open(output_dir / "results.json", "w") as f:
         json.dump(json_data, f, indent=4)
-    print(f"[benchmark_task2] Saved detailed JSON to {output_dir / 'results.json'}")
+    print(f"[submission_task2] Saved detailed JSON to {output_dir / 'results.json'}")
 
     # 2. Build plot
     plt.figure(figsize=(10, 6))
     
-    # Custom color and style mapping for modes
+    # Custom color mapping for modes
     color_map = {
-        "mode3": "tab:blue",
         "mode5": "tab:green",
-        "mode4": "tab:orange",
-        "mode6": "tab:red",
         "mode7": "tab:purple"
     }
     
@@ -187,10 +134,9 @@ def generate_outputs(results: dict[str, Task2Result], output_dir: Path) -> None:
         recalls = [p["recall"] * 100.0 for p in pts]
         
         color = color_map.get(cfg.mode, "tab:gray")
-        linestyle = "--" if not cfg.use_flas else "-"
         
         # Plot curve
-        plt.plot(times, recalls, marker="o", label=cfg.label, linewidth=2, color=color, linestyle=linestyle)
+        plt.plot(times, recalls, marker="o", label=cfg.label, linewidth=2, color=color)
         
         # Highlight best point
         best = find_best_point(res.sweep_points)
@@ -208,19 +154,19 @@ def generate_outputs(results: dict[str, Task2Result], output_dir: Path) -> None:
     plt.axhline(y=80.0, color="gray", linestyle="--", label="Target Recall (80%)")
     plt.xlabel("Search Time (ms)")
     plt.ylabel("Recall @ 30 (%)")
-    plt.title("Task 2 Benchmark — Recall @ 30 vs Search Time")
+    plt.title("Task 2 Submission — Recall @ 30 vs Search Time")
     plt.legend(loc="lower right")
     plt.grid(True, which="both", linestyle=":", alpha=0.6)
     
     plot_path = output_dir / "recall_vs_time.png"
     plt.savefig(plot_path, dpi=150)
     plt.close()
-    print(f"[benchmark_task2] Saved plot to {plot_path}")
+    print(f"[submission_task2] Saved plot to {plot_path}")
 
     # 3. Print & Save Markdown Summary
     md_content = []
-    md_content.append("# Task 2 Benchmark Summary — Llama Dev dataset")
-    md_content.append("\nThis table lists the best sweep configuration for each test that minimizes search time while reaching at least 80% recall.\n")
+    md_content.append("# Task 2 Submission Summary — Llama Dev dataset")
+    md_content.append("\nThis table lists the best sweep configuration for each submission test that minimizes search time while reaching at least 80% recall.\n")
     
     headers = ["Mode", "Method", "Best Settings", "Load Time", "Build Time", "FLAS Time", "Total Time", "Search Time", "Recall"]
     md_content.append("| " + " | ".join(headers) + " |")
@@ -251,15 +197,9 @@ def generate_outputs(results: dict[str, Task2Result], output_dir: Path) -> None:
         md_content.append("| " + " | ".join(row) + " |")
 
     md_output = "\n".join(md_content)
-    print("\n" + "=" * 60)
-    print("  Benchmark Summary Table:")
-    print("=" * 60)
-    print(md_output)
-    print("=" * 60 + "\n")
-    
     with open(output_dir / "results.md", "w") as f:
         f.write(md_output)
-    print(f"[benchmark_task2] Saved markdown summary to {output_dir / 'results.md'}")
+    print(f"[submission_task2] Saved markdown summary to {output_dir / 'results.md'}")
 
 
 def main() -> None:
@@ -274,7 +214,7 @@ def main() -> None:
         results[cfg.name] = result
         sys.stdout.flush()
 
-    output_dir = Path(__file__).parent / "results" / "benchmark" / "task2"
+    output_dir = Path(__file__).parent / "results" / "submission" / "task2"
     generate_outputs(results, output_dir)
 
     print("Done.")

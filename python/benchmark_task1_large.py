@@ -240,7 +240,7 @@ def main() -> None:
 
     print_table(results)
     
-    output_dir = Path(__file__).parent / "results" / "task1_large"
+    output_dir = Path(__file__).parent / "results" / "benchmark" / "task1_large"
     generate_outputs(results, output_dir)
 
     print("Done.")
