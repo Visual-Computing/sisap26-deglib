@@ -27,7 +27,7 @@ import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .result import Task1Result
+    from .result import Task1Result, Task2Result
 
 # ---------------------------------------------------------------------------
 # Compiled regex patterns
@@ -38,7 +38,19 @@ _RE_SIMD = re.compile(r"SIMD\s*:\s*(.+)", re.IGNORECASE)
 
 # Match timings in seconds or milliseconds (e.g. "Load Time: 8958.8 ms" or "Total Elapsed Time: 17.9 s")
 _RE_TIME = re.compile(
-    r"(load|quantization|quant|quantize|graph\s+build|build|graph\s+conversion|convert|conversion|pruning|prune|explore|rerank|overall|total\s+elapsed)\s*time\s*:\s*([\d.]+)\s*(ms|s)?",
+    r"(load|quantization|quant|quantize|graph\s+build|build|graph\s+conversion|convert|conversion|pruning|prune|explore|rerank|flas|overall|total\s+elapsed)\s*time\s*:\s*([\d.]+)\s*(ms|s)?",
+    re.IGNORECASE,
+)
+
+# --- eps_search=0.007 ---
+_RE_EPS_SEARCH = re.compile(
+    r"---?\s*eps_search\s*=\s*([\d.]+)\s*-*?",
+    re.IGNORECASE,
+)
+
+# "max_dist=5000 has recall 75.25 % and search time 24.1 ms"
+_RE_SWEEP_LINE_TASK2 = re.compile(
+    r"max_dist=(\d+)\s*has\s*recall\s*([\d.]+)\s*%\s*(?:and\s+search\s+time\s*([\d.]+)\s*(ms|s)?)?",
     re.IGNORECASE,
 )
 
@@ -220,5 +232,166 @@ class Task1LogParser:
             self.explore_time_s = value
         elif "rerank" in phase:
             self.rerank_time_s = value
+        elif "overall" in phase or "total" in phase:
+            self.overall_time_s = value
+
+
+class Task2LogParser:
+    """
+    Stateful, line-by-line parser for deglib_evp_task2 log output.
+    """
+
+    def __init__(self, *, echo: bool = True) -> None:
+        self._echo = echo
+        self._raw_lines: list[str] = []
+        self._errors: list[str] = []
+        self._warnings: list[str] = []
+
+        self.simd_info: str = ""
+        self.load_time_s: float | None = None
+        self.quant_time_s: float | None = None
+        self.build_time_s: float | None = None
+        self.convert_time_s: float | None = None
+        self.explore_time_s: float | None = None
+        self.rerank_time_s: float | None = None
+        self.flas_time_s: float | None = None
+        self.overall_time_s: float | None = None
+        self.recall_results: list[tuple[int, float]] = []
+        self.sweep_points: list[dict[str, Any]] = []
+        self._current_eps_search: float | None = None
+        self._last_max_dist: int = 0
+
+    def feed(self, line: str) -> None:
+        line = line.rstrip("\r\n")
+        self._raw_lines.append(line)
+
+        if self._echo:
+            print(line, flush=True)
+
+        self._parse_line(line)
+
+    def build_result(
+        self,
+        mode: str,
+        dataset_size: str,
+        exit_code: int,
+    ) -> "Task2Result":
+        from .result import Task2Result
+
+        return Task2Result(
+            mode=mode,
+            dataset_size=dataset_size,
+            exit_code=exit_code,
+            simd_info=self.simd_info,
+            load_time_s=self.load_time_s,
+            quant_time_s=self.quant_time_s,
+            build_time_s=self.build_time_s,
+            convert_time_s=self.convert_time_s,
+            explore_time_s=self.explore_time_s,
+            rerank_time_s=self.rerank_time_s,
+            flas_time_s=self.flas_time_s,
+            overall_time_s=self.overall_time_s,
+            recall_results=list(self.recall_results),
+            sweep_points=list(self.sweep_points),
+            raw_logs=list(self._raw_lines),
+        )
+
+    @property
+    def errors(self) -> list[str]:
+        return list(self._errors)
+
+    @property
+    def warnings(self) -> list[str]:
+        return list(self._warnings)
+
+    def _parse_line(self, line: str) -> None:
+        # SIMD info
+        m = _RE_SIMD.search(line)
+        if m:
+            self.simd_info = m.group(1).strip()
+            return
+
+        # Timing phases
+        m = _RE_TIME.search(line)
+        if m:
+            phase = m.group(1).lower()
+            value = float(m.group(2))
+            unit = m.group(3).lower() if m.group(3) else "s"
+            if unit == "ms":
+                value /= 1000.0
+            self._set_time(phase, value)
+            return
+
+        # eps_search header
+        m = _RE_EPS_SEARCH.search(line)
+        if m:
+            self._current_eps_search = float(m.group(1))
+            return
+
+        # Task 2 Recall Sweep lines
+        m = _RE_SWEEP_LINE_TASK2.search(line)
+        if m:
+            max_dist = int(m.group(1))
+            recall_val = float(m.group(2)) / 100.0
+            search_time = float(m.group(3)) if m.group(3) else 0.0
+            if m.group(4) and m.group(4).lower() == 's':
+                search_time *= 1000.0
+            self.recall_results.append((max_dist, recall_val))
+            self.sweep_points.append({
+                "eps_search": self._current_eps_search,
+                "max_dist": max_dist,
+                "recall": recall_val,
+                "search_time_ms": search_time,
+            })
+            return
+
+        # Recall Sweep lines
+        m = _RE_SWEEP_LINE.search(line)
+        if m:
+            max_dist = int(m.group(1))
+            recall_val = float(m.group(2)) / 100.0
+            self.recall_results.append((max_dist, recall_val))
+            return
+
+        # Recall@K Summary
+        m = _RE_RECALL.search(line)
+        if m:
+            recall_val = float(m.group(1))
+            if "%" in line or recall_val > 1.0:
+                recall_val /= 100.0
+            if m.group(2):
+                max_dist = int(m.group(2))
+                self.recall_results.append((max_dist, recall_val))
+            else:
+                if not self.recall_results:
+                    self._last_max_dist += 1
+                    max_dist = self._last_max_dist
+                    self.recall_results.append((max_dist, recall_val))
+            return
+
+        # Errors
+        if _RE_ERROR.search(line):
+            self._errors.append(line)
+            return
+
+        # Warnings
+        if _RE_WARNING.search(line):
+            self._warnings.append(line)
+
+    def _set_time(self, phase: str, value: float) -> None:
+        if "load" in phase:
+            self.load_time_s = value
+        elif "quant" in phase:
+            self.quant_time_s = value
+        elif "build" in phase:
+            self.build_time_s = value
+        elif "convert" in phase or "conversion" in phase:
+            self.convert_time_s = value
+        elif "explore" in phase:
+            self.explore_time_s = value
+        elif "rerank" in phase:
+            self.rerank_time_s = value
+        elif "flas" in phase:
+            self.flas_time_s = value
         elif "overall" in phase or "total" in phase:
             self.overall_time_s = value

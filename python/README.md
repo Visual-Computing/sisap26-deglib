@@ -220,7 +220,7 @@ result.to_dict()          # dict for JSON serialisation
 
 
 
-## 🔧 Benchmark Modes
+## 🔧 Task 1 Benchmark Modes
 
 | Mode | Name | Description |
 |---|---|---|
@@ -249,6 +249,18 @@ result.to_dict()          # dict for JSON serialisation
 | **Reranking** | no | X | X | X | | X | X | | |
 | | int 8 | | | | | | | | X |
 | | float 16 | | | | X | | | X | |
+
+## 🔧 Task 2 Benchmark Modes
+
+| Mode | Name | Description |
+|---|---|---|
+| `mode1` | `baseline` / `fp32-build-fp32-explore` | Builds a SizeBoundedGraph using FP32 features (Metric::InnerProduct) and explores via FP32 inner-product similarity. Serves as the high-quality baseline. |
+| `mode2` | `fp16-build-fp16-explore` | Builds the graph with FP16 features and explores via FP16 inner-product similarity. |
+| `mode3` | `baseline-fp16` / `fp32-build-fp16-explore` | Builds the graph with FP32 features and explores via FP16 inner-product similarity. |
+| `mode4` | `l2-converted` / `fp32-build-l2-explore` | Builds the graph with FP32 features converted to L2 space (dimension d+1) and explores via FP32 L2 similarity. |
+| `mode5` | `l2-fp16-ip` / `l2-build-fp16-ip-explore` | Builds the graph with FP32 features converted to L2 space (dimension d+1) and explores via FP16 Inner Product similarity. |
+| `mode6` | `l2-fp16-l2` / `l2-build-fp16-l2-explore` | Builds the graph with FP32 features converted to L2 space (dimension d+1) and explores via FP16 L2 similarity. |
+| `mode7` | `l2-fp16-d2` / `l2-build-fp16-d2-explore` | Builds the graph with FP32 features converted to L2-converted space (dimension d+2) and explores via FP16 L2 similarity. |
 
 ## 🔧 CLI Parameters
 

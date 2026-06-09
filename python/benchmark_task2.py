@@ -1,322 +1,283 @@
-import time
-import sys
+"""
+benchmark_task2.py — Run and plot Task 2 benchmark configurations.
+
+This script runs the 7 benchmark configurations on the llama-dev dataset,
+automatically identifies the best sweep point reaching >= 0.8 recall,
+generates a Recall vs Search Time plot, and saves all outputs
+(plot, JSON, and Markdown summary) to results/task2.
+"""
+from __future__ import annotations
+
 import json
+import re
+import sys
+from dataclasses import dataclass
 from pathlib import Path
-from enum import Enum
-import h5py
-import numpy as np
-from huggingface_hub import hf_hub_download
-import deglib
-import flas_cpp
+import matplotlib.pyplot as plt
+
+from docker_runner import Task2Result, Task2Runner
 
 
-class SortOrder(Enum):
-    ORIGINAL = "original"
-    SHUFFLE = "shuffle"
-    FLAS = "flas"
+@dataclass
+class ModeConfig:
+    name: str
+    mode: str
+    label: str
+    settings: str
+    k_ext: int = 64
+    k_graph: int = 32
+    eps_ext: float = 0.001
+    build_threads: int = 1
+    max_dist: str = ""
+    eps_search: str = ""
+    num_runs: int = 1
+    use_flas: bool = False
 
 
-# ==============================================================================
-# BENCHMARK CONFIGURATION
-# ==============================================================================
-# Dataset parameters
-REPO_ID = "SISAP-Challenges/SISAP2026"
-FILENAME = "llama-dev/llama-dev.h5"
+MODES: list[ModeConfig] = [
+    ModeConfig(
+        name="mode3_no_flas",
+        mode="mode3",
+        label="Mode 3: FP32 Build & FP16 Explore (no FLAS)",
+        settings="k_ext=64, k_graph=32, runs=3",
+        max_dist="15000,20000,25000,30000",
+        eps_search="0.25",
+        num_runs=3,
+        use_flas=False,
+    ),
+    ModeConfig(
+        name="mode3_flas",
+        mode="mode3",
+        label="Mode 3: FP32 Build & FP16 Explore (+ FLAS)",
+        settings="k_ext=64, k_graph=32, runs=3",
+        max_dist="15000,18000,20000,23000,25000,27000,30000",
+        eps_search="0.28",
+        num_runs=3,
+        use_flas=True,
+    ),
+    ModeConfig(
+        name="mode5_no_flas",
+        mode="mode5",
+        label="Mode 5: L2 Build (d+1) & FP16 IP Explore (no FLAS)",
+        settings="k_ext=64, k_graph=32, runs=10",
+        max_dist="5000,6000,7000,8000,9000,10000",
+        eps_search="0.18",
+        num_runs=10,
+        use_flas=False,
+    ),
+    ModeConfig(
+        name="mode5_flas",
+        mode="mode5",
+        label="Mode 5: L2 Build (d+1) & FP16 IP Explore (+ FLAS)",
+        settings="k_ext=64, k_graph=32, runs=10",
+        max_dist="5000,6000,7000,8000",
+        eps_search="0.18",
+        num_runs=10,
+        use_flas=True,
+    ),
+    ModeConfig(
+        name="mode4_flas",
+        mode="mode4",
+        label="Mode 4: L2 Build (d+1) & FP32 L2 Explore (+ FLAS)",
+        settings="k_ext=64, k_graph=32, runs=10",
+        max_dist="5000,5500,6000,6500,7000",
+        eps_search="0.008",
+        num_runs=10,
+        use_flas=True,
+    ),
+    ModeConfig(
+        name="mode6_flas",
+        mode="mode6",
+        label="Mode 6: L2 Build (d+1) & FP16 L2 Explore (+ FLAS)",
+        settings="k_ext=64, k_graph=32, runs=10",
+        max_dist="5000,5500,6000,6500,7000,8000,9000,10000",
+        eps_search="0.007",
+        num_runs=10,
+        use_flas=True,
+    ),
+    ModeConfig(
+        name="mode7_flas",
+        mode="mode7",
+        label="Mode 7: L2 Build (d+2) & FP16 L2 Explore (+ FLAS)",
+        settings="k_ext=64, k_graph=32, runs=10",
+        max_dist="5000,5500,6000,6200,6300,6500,7000",
+        eps_search="0.007",
+        num_runs=10,
+        use_flas=True,
+    ),
+]
 
-# Input options: Set LOAD_GRAPH = True to load a pre-built graph instead of building a new one
-LOAD_GRAPH = False
-LOAD_GRAPH_PATH = str(Path(__file__).parent / "results/llama_dev_deg.graph")
 
-# Sorting order for train vectors: SortOrder.ORIGINAL, SortOrder.SHUFFLE, SortOrder.FLAS
-# (Ignored if LOAD_GRAPH is True)
-SORT_ORDER = SortOrder.SHUFFLE
+def run_mode(runner: Task2Runner, cfg: ModeConfig) -> Task2Result | None:
+    print(f"\n{'='*60}")
+    print(f"  Running: {cfg.label}")
+    print(f"  Settings: {cfg.settings} | eps_search={cfg.eps_search}")
+    print(f"{'='*60}\n")
 
-# Shuffling parameters (used if SORT_ORDER == SortOrder.SHUFFLE)
-SHUFFLE_SEED = 42
-
-# FLAS sorting parameters (used if SORT_ORDER == SortOrder.FLAS)
-FLAS_SEED = 42
-FLAS_RADIUS_DECAY = 0.93
-FLAS_MAX_SWAP_POSITIONS = 9
-FLAS_OPTIMIZE_NARROW_GRIDS = 1
-
-# DEG Graph Build Parameters
-# (Ignored if LOAD_GRAPH is True)
-K_GRAPH = 30
-K_EXT = 30
-EPS_EXT = 0.001
-IMPROVE_K = 0
-IMPROVE_EPS = 0.0
-MAX_PATH_LENGTH = 5
-SWAP_TRIES = 0
-ADDITIONAL_SWAP_TRIES = 0
-OPTIMIZATION_TARGET = deglib.builder.OptimizationTarget.LowLID
-
-# Thread limits
-BUILD_THREADS = 1
-SEARCH_THREADS = 8
-
-# Search Evaluation Parameters
-K_SEARCH = 30
-EPS_SWEEP = [0.1, 0.15, 0.2, 0.25, 0.3]
-
-# Output options
-SAVE_GRAPH = False
-SAVE_GRAPH_PATH = str(Path(__file__).parent / "results/llama_dev_deg.graph")
-# ==============================================================================
-
-
-def flas_progress_callback(progress: float) -> bool:
-    bar_length = 60
-    block = int(bar_length * progress)
-    bar = '#' * block + '-' * (bar_length - block)
-    percentage = progress * 100
-    sys.stdout.write(f'\rFLAS Sorting: {percentage:6.2f}% [{bar}]')
-    if progress >= 1.0:
-        sys.stdout.write('\n')
-    sys.stdout.flush()
-    return False
-
-
-def main():
-    print("=" * 60)
-    print("  deglib - Task 2 Direct Benchmark")
-    print("=" * 60)
-
-    # 1. Download/resolve the dataset using huggingface_hub
-    print(f"\n[1/5] Downloading/resolving {FILENAME} dataset from Hugging Face...")
-    t_download_start = time.perf_counter()
-    h5_path = hf_hub_download(
-        repo_id=REPO_ID,
-        filename=FILENAME,
-        repo_type="dataset",
+    kwargs: dict = dict(
+        mode=cfg.mode,
+        k_ext=cfg.k_ext,
+        k_graph=cfg.k_graph,
+        eps_ext=cfg.eps_ext,
+        build_threads=cfg.build_threads,
+        max_dist=cfg.max_dist,
+        eps_search=cfg.eps_search,
+        num_runs=cfg.num_runs,
+        use_flas=cfg.use_flas,
     )
-    t_download_end = time.perf_counter()
-    print(f"      -> Path: {h5_path}")
-    print(f"      -> Resolved in {t_download_end - t_download_start:.2f} s")
 
-    # 2. Load queries and ground truth (and train only if building graph)
-    print("\n[2/5] Loading data from HDF5 file...")
-    t_load_start = time.perf_counter()
-    with h5py.File(h5_path, "r") as f:
-        queries = np.array(f["test/queries"], dtype=np.float32)
-        knns = np.array(f["test/knns"], dtype=np.int64)
-        if not LOAD_GRAPH:
-            train = np.array(f["train"], dtype=np.float32)
-            train_loaded_msg = f"Loaded {train.shape[0]} train vectors ({train.shape[1]}-dim)"
-        else:
-            train = None
-            train_loaded_msg = "Skipped loading train vectors (using pre-built graph)"
-    t_load_end = time.perf_counter()
-    print(f"      -> {train_loaded_msg}")
-    print(f"      -> Loaded {queries.shape[0]} query vectors")
-    print(f"      -> Loaded ground truth knns shape: {knns.shape}")
-    print(f"      -> Time elapsed: {t_load_end - t_load_start:.2f} s")
+    try:
+        result = runner.run(**kwargs)
+    except Exception as e:
+        print(f"  ERROR: {e}", file=sys.stderr)
+        return None
 
-    # 3. Build or Load the DEG Graph
-    if LOAD_GRAPH:
-        print(f"\n[3/5] Loading DEG Graph from {LOAD_GRAPH_PATH}...")
-        if not Path(LOAD_GRAPH_PATH).exists():
-            raise FileNotFoundError(f"Saved graph not found at: {LOAD_GRAPH_PATH}")
-        t_graph_load_start = time.perf_counter()
-        graph = deglib.graph.load_readonly_graph(LOAD_GRAPH_PATH)
-        t_graph_load_end = time.perf_counter()
-        build_time = t_graph_load_end - t_graph_load_start
-        print(f"      -> DEG Graph loaded successfully in {build_time:.2f} s")
-        print(f"      -> Graph size: {graph.size()} vertices")
-    else:
-        print(f"\n[3/5] Building DEG Graph (threads={BUILD_THREADS})...")
-        n_train = train.shape[0]
-        dims = train.shape[1]
+    if not result.succeeded:
+        print(f"  ERROR: container exited with code {result.exit_code}", file=sys.stderr)
+        return None
 
-        # Create empty graph
-        graph = deglib.graph.SizeBoundedGraph.create_empty(
-            capacity=n_train,
-            dims=dims,
-            edges_per_vertex=K_GRAPH,
-            metric=deglib.Metric.InnerProduct
-        )
+    return result
 
-        # Setup 1-based labels to match SISAP ground truth
-        labels = np.arange(1, n_train + 1, dtype=np.uint32)
 
-        # Apply sorting order to train vectors and labels
-        if SORT_ORDER == SortOrder.SHUFFLE:
-            print(f"      -> Shuffling train vectors (seed={SHUFFLE_SEED})...")
-            rng = np.random.default_rng(seed=SHUFFLE_SEED)
-            perm = rng.permutation(n_train)
-            train = train[perm]
-            labels = labels[perm]
-        elif SORT_ORDER == SortOrder.FLAS:
-            print("      -> Sorting train vectors with FLAS (1 x N grid)...")
-            t_flas_start = time.perf_counter()
-            # 1 x N grid represented as (N, 1) shape
-            ids = np.arange(n_train, dtype=np.int32).reshape(n_train, 1)
-            frozen = np.zeros((n_train, 1), dtype=bool)
+def find_best_point(sweep_points: list[dict[str, Any]], target_recall: float = 0.8) -> dict[str, Any] | None:
+    """Find the point with search_time_ms minimized among those with recall >= target_recall."""
+    valid_points = [p for p in sweep_points if p.get("recall", 0.0) >= target_recall]
+    if valid_points:
+        return min(valid_points, key=lambda p: p.get("search_time_ms", float("inf")))
+    
+    # Fallback: return point with highest recall if target not reached
+    if sweep_points:
+        return max(sweep_points, key=lambda p: p.get("recall", 0.0))
+    return None
+
+
+def generate_outputs(results: dict[str, Task2Result], output_dir: Path) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # 1. Save results to JSON
+    json_data = {}
+    for name, res in results.items():
+        if res is not None:
+            json_data[name] = res.to_dict()
+    
+    with open(output_dir / "results.json", "w") as f:
+        json.dump(json_data, f, indent=4)
+    print(f"[benchmark_task2] Saved detailed JSON to {output_dir / 'results.json'}")
+
+    # 2. Build plot
+    plt.figure(figsize=(10, 6))
+    
+    # Custom color and style mapping for modes
+    color_map = {
+        "mode3": "tab:blue",
+        "mode5": "tab:green",
+        "mode4": "tab:orange",
+        "mode6": "tab:red",
+        "mode7": "tab:purple"
+    }
+    
+    for cfg in MODES:
+        res = results.get(cfg.name)
+        if res is None or not res.sweep_points:
+            continue
             
-            code, result = flas_cpp.flas(
-                train.astype(np.float32),
-                ids,
-                frozen,
-                False,                       # wrap
-                FLAS_RADIUS_DECAY,           # radius_decay
-                1.0,                         # weight_swappable
-                100.0,                       # weight_non_swappable
-                0.01,                        # weight_hole
-                FLAS_MAX_SWAP_POSITIONS,     # max_swap_positions
-                FLAS_OPTIMIZE_NARROW_GRIDS,  # optimize_narrow_grids
-                FLAS_SEED,                   # seed
-                flas_progress_callback       # callback
+        # Extract points sorted by search time
+        pts = sorted(res.sweep_points, key=lambda p: p.get("search_time_ms", 0.0))
+        times = [p["search_time_ms"] for p in pts]
+        recalls = [p["recall"] * 100.0 for p in pts]
+        
+        color = color_map.get(cfg.mode, "tab:gray")
+        linestyle = "--" if not cfg.use_flas else "-"
+        
+        # Plot curve
+        plt.plot(times, recalls, marker="o", label=cfg.label, linewidth=2, color=color, linestyle=linestyle)
+        
+        # Highlight best point
+        best = find_best_point(res.sweep_points)
+        if best:
+            plt.scatter(
+                [best["search_time_ms"]], [best["recall"] * 100.0],
+                color=color, edgecolor="black", s=100, zorder=5
             )
-            if code != 0:
-                raise RuntimeError(f"FLAS C++ extension failed with code {code}")
-            t_flas_end = time.perf_counter()
-            print(f"      -> FLAS sorting completed in {t_flas_end - t_flas_start:.2f} s")
+
+    import matplotlib.ticker as ticker
+    ax = plt.gca()
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
+    ax.xaxis.set_minor_locator(ticker.MultipleLocator(5))
+
+    plt.axhline(y=80.0, color="gray", linestyle="--", label="Target Recall (80%)")
+    plt.xlabel("Search Time (ms)")
+    plt.ylabel("Recall @ 30 (%)")
+    plt.title("Task 2 Benchmark — Recall @ 30 vs Search Time")
+    plt.legend(loc="lower right")
+    plt.grid(True, which="both", linestyle=":", alpha=0.6)
+    
+    plot_path = output_dir / "recall_vs_time.png"
+    plt.savefig(plot_path, dpi=150)
+    plt.close()
+    print(f"[benchmark_task2] Saved plot to {plot_path}")
+
+    # 3. Print & Save Markdown Summary
+    md_content = []
+    md_content.append("# Task 2 Benchmark Summary — Llama Dev dataset")
+    md_content.append("\nThis table lists the best sweep configuration for each test that minimizes search time while reaching at least 80% recall.\n")
+    
+    headers = ["Mode", "Method", "Best Settings", "Load Time", "Build Time", "FLAS Time", "Total Time", "Search Time", "Recall"]
+    md_content.append("| " + " | ".join(headers) + " |")
+    md_content.append("|" + "|".join([":---:" if i == 0 or i > 2 else "---" for i in range(len(headers))]) + "|")
+    
+    for cfg in MODES:
+        res = results.get(cfg.name)
+        if res is None:
+            md_content.append(f"| {cfg.mode} | {cfg.label} | ERR | — | — | — | — | — | — |")
+            continue
             
-            perm = result.flatten()
-            train = train[perm]
-            labels = labels[perm]
-        elif SORT_ORDER == SortOrder.ORIGINAL:
-            print("      -> Keeping original train vector order...")
+        best = find_best_point(res.sweep_points)
+        if best:
+            best_settings = f"eps={best['eps_search']}, max_dist={best['max_dist']}"
+            search_time_str = f"{best['search_time_ms']:.2f} ms"
+            recall_str = f"{best['recall']*100.0:.2f}%"
         else:
-            raise ValueError(f"Unknown SORT_ORDER: {SORT_ORDER}. Expected 'original', 'shuffle', or 'flas'.")
-
-        # Configure builder
-        builder = deglib.builder.EvenRegularGraphBuilder(
-            graph,
-            optimization_target=OPTIMIZATION_TARGET,
-            extend_k=K_EXT,
-            extend_eps=EPS_EXT,
-            improve_k=IMPROVE_K,
-            improve_eps=IMPROVE_EPS,
-            max_path_length=MAX_PATH_LENGTH,
-            swap_tries=SWAP_TRIES,
-            additional_swap_tries=ADDITIONAL_SWAP_TRIES,
-        )
-        builder.set_thread_count(BUILD_THREADS)
-        builder.add_entry(labels, train)
-
-        # Build and measure time
-        t_build_start = time.perf_counter()
-        builder.build(callback="progress")
-        t_build_end = time.perf_counter()
-        build_time = t_build_end - t_build_start
-        print(f"      -> DEG Graph built successfully in {build_time:.2f} s")
-        print(f"      -> Graph size: {graph.size()} vertices")
-
-    # 4. Search and Sweep eps-search
-    print(f"\n[4/5] Running search sweep (eps-search {EPS_SWEEP[0]} to {EPS_SWEEP[-1]}, threads={SEARCH_THREADS})...")
-    
-    results = []
-    
-    # We want Recall@K_SEARCH, so extract first K_SEARCH columns of ground truth knns
-    gt_k = knns[:, :K_SEARCH]
-
-    for eps in EPS_SWEEP:
-        t_search_start = time.perf_counter()
-        # Search the top K_SEARCH closest neighbors
-        indices, _ = graph.search(
-            query=queries,
-            eps=eps,
-            k=K_SEARCH,
-            threads=SEARCH_THREADS
-        )
-        t_search_end = time.perf_counter()
+            best_settings = "—"
+            search_time_str = "—"
+            recall_str = "—"
+            
+        load = f"{res.load_time_s:.1f}s" if res.load_time_s is not None else "—"
+        build = f"{res.build_time_s:.1f}s" if res.build_time_s is not None else "—"
+        flas = f"{res.flas_time_s:.1f}s" if res.flas_time_s is not None else "—"
+        total = f"{res.overall_time_s:.1f}s" if res.overall_time_s is not None else "—"
         
-        search_time_s = t_search_end - t_search_start
-        search_time_ms = search_time_s * 1000.0
-        avg_time_ms = search_time_ms / len(queries)
-        qps = len(queries) / search_time_s
+        row = [cfg.mode, cfg.label, best_settings, load, build, flas, total, search_time_str, recall_str]
+        md_content.append("| " + " | ".join(row) + " |")
 
-        # Calculate Recall@K_SEARCH
-        recall_sum = 0.0
-        for i in range(len(queries)):
-            retrieved = set(indices[i])
-            ground_truth = set(gt_k[i])
-            intersection = retrieved.intersection(ground_truth)
-            recall_sum += len(intersection) / float(K_SEARCH)
-        mean_recall = recall_sum / len(queries)
+    md_output = "\n".join(md_content)
+    print("\n" + "=" * 60)
+    print("  Benchmark Summary Table:")
+    print("=" * 60)
+    print(md_output)
+    print("=" * 60 + "\n")
+    
+    with open(output_dir / "results.md", "w") as f:
+        f.write(md_output)
+    print(f"[benchmark_task2] Saved markdown summary to {output_dir / 'results.md'}")
 
-        results.append({
-            "eps": eps,
-            "recall": mean_recall,
-            "search_time_ms": search_time_ms,
-            "avg_time_ms": avg_time_ms,
-            "qps": qps
-        })
-        print(f"      -> eps={eps:<5} | Recall@{K_SEARCH}={mean_recall:.2%} | Search Time={search_time_ms:.1f} ms | Avg={avg_time_ms:.3f} ms | QPS={qps:.1f}")
 
-    # 5. Output Results Table
-    print(f"\n[5/5] Final Benchmark Results Table:")
-    print("=" * 70)
-    print(f"{'Load' if LOAD_GRAPH else 'Build'} Time: {build_time:.2f} s")
-    print(f"Sort Order: {SORT_ORDER.name if not LOAD_GRAPH else 'N/A (Pre-built)'}")
-    print("=" * 70)
-    print(f"| {'eps-search':<10} | {f'Recall@{K_SEARCH}':<10} | {'Search Time':<12} | {'Avg/Query':<10} | {'QPS':<10} |")
-    print(f"|{'-'*12}|{'-'*12}|{'-'*14}|{'-'*12}|{'-'*12}|")
-    for r in results:
-        print(f"| {r['eps']:<10.3f} | {r['recall']:.2%} | {r['search_time_ms']:>8.1f} ms | {r['avg_time_ms']:>7.3f} ms | {r['qps']:>8.1f} |")
-    print("=" * 70)
+def main() -> None:
+    runner = Task2Runner(results_dir=Path(__file__).parent / "results", echo_logs=True)
+    runner.build_image(force=False)
 
-    # 6. Save graph and parameters metadata
-    if SAVE_GRAPH and not LOAD_GRAPH:
-        print(f"\nSaving DEG Graph and parameters metadata...")
-        # Create parent directories if they do not exist
-        Path(SAVE_GRAPH_PATH).parent.mkdir(parents=True, exist_ok=True)
-        # Save the graph
-        graph.save_graph(SAVE_GRAPH_PATH)
-        print(f"      -> Saved graph file to: {SAVE_GRAPH_PATH}")
-        
-        # Save the metadata next to it
-        metadata_path = Path(SAVE_GRAPH_PATH).with_suffix(".json")
-        metadata = {
-            "dataset": {
-                "repo_id": REPO_ID,
-                "filename": FILENAME
-            },
-            "sort_order": SORT_ORDER.name,
-            "shuffle_seed": SHUFFLE_SEED,
-            "flas": {
-                "seed": FLAS_SEED,
-                "radius_decay": FLAS_RADIUS_DECAY,
-                "max_swap_positions": FLAS_MAX_SWAP_POSITIONS,
-                "optimize_narrow_grids": FLAS_OPTIMIZE_NARROW_GRIDS
-            },
-            "graph": {
-                "k_graph": K_GRAPH,
-                "k_ext": K_EXT,
-                "eps_ext": EPS_EXT,
-                "improve_k": IMPROVE_K,
-                "improve_eps": IMPROVE_EPS,
-                "max_path_length": MAX_PATH_LENGTH,
-                "swap_tries": SWAP_TRIES,
-                "additional_swap_tries": ADDITIONAL_SWAP_TRIES,
-                "optimization_target": OPTIMIZATION_TARGET.name,
-                "build_threads": BUILD_THREADS,
-                "build_time_s": build_time,
-                "size": graph.size()
-            },
-            "search": {
-                "k_search": K_SEARCH,
-                "eps_sweep": EPS_SWEEP,
-                "search_threads": SEARCH_THREADS
-            },
-            "results": [
-                {
-                    "eps": r["eps"],
-                    "recall": r["recall"],
-                    "search_time_ms": r["search_time_ms"],
-                    "avg_time_ms": r["avg_time_ms"],
-                    "qps": r["qps"]
-                }
-                for r in results
-            ]
-        }
-        with open(metadata_path, "w") as f_meta:
-            json.dump(metadata, f_meta, indent=4)
-        print(f"      -> Saved metadata parameters to: {metadata_path}")
+    results: dict[str, Task2Result] = {}
 
-    return results
+    for cfg in MODES:
+        sys.stdout.flush()
+        result = run_mode(runner, cfg)
+        results[cfg.name] = result
+        sys.stdout.flush()
+
+    output_dir = Path(__file__).parent / "results" / "task2"
+    generate_outputs(results, output_dir)
+
+    print("Done.")
 
 
 if __name__ == "__main__":

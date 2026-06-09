@@ -29,12 +29,15 @@ Quick start::
     print(f"Exit code : {result.exit_code}")
 """
 
-from .log_parser import Task1LogParser
-from .result import Task1Result
-from .runner import Task1Runner
+from .log_parser import Task1LogParser, Task2LogParser
+from .result import Task1Result, Task2Result
+from .runner import Task1Runner, Task2Runner
 
 __all__ = [
     "Task1Runner",
     "Task1Result",
     "Task1LogParser",
+    "Task2Runner",
+    "Task2Result",
+    "Task2LogParser",
 ]

@@ -1,13 +1,13 @@
 """
-runner.py — Task1Runner: Docker container management for deglib_evp_task1.
+runner.py — Task1Runner and Task2Runner: Docker container management for deglib_evp.
 
 Responsibilities
 ----------------
 1. Download the SISAP 2026 dataset via HuggingFace Hub (cached locally).
 2. Build the Docker image from the project Dockerfile (optional).
 3. Start the container with SISAP-compliant resource limits and volume mounts.
-4. Stream container logs in real time, feeding each line to Task1LogParser.
-5. Return a structured Task1Result when the container exits.
+4. Stream container logs in real time, feeding each line to the parser.
+5. Return a structured Task Result when the container exits.
 
 Resource limits (fixed, matching official SISAP 2026 evaluation):
     --cpus=8
@@ -30,19 +30,23 @@ import docker
 import docker.errors
 from huggingface_hub import hf_hub_download
 
-from .log_parser import Task1LogParser
-from .result import Task1Result
+from .log_parser import Task1LogParser, Task2LogParser
+from .result import Task1Result, Task2Result
 
 # ---------------------------------------------------------------------------
-# Dataset registry
+# Dataset registries
 # ---------------------------------------------------------------------------
 
 REPO_ID = "SISAP-Challenges/SISAP2026"
 REPO_TYPE = "dataset"
 
-DATASET_FILES: dict[str, str] = {
+DATASET_FILES_TASK1: dict[str, str] = {
     "small": "benchmark-dev-wikipedia-bge-m3-small.h5",
     "large": "benchmark-dev-wikipedia-bge-m3.h5",
+}
+
+DATASET_FILES_TASK2: dict[str, str] = {
+    "default": "llama-dev/llama-dev.h5",
 }
 
 # ---------------------------------------------------------------------------
@@ -59,12 +63,12 @@ _DEFAULT_IMAGE = "sisap26-deglib-cpp"
 
 
 # ---------------------------------------------------------------------------
-# Runner
+# Base Runner
 # ---------------------------------------------------------------------------
 
-class Task1Runner:
+class BaseRunner:
     """
-    High-level interface for running deglib_evp_task1 inside Docker.
+    Common base class for Task1Runner and Task2Runner to avoid duplicated code.
 
     Parameters
     ----------
@@ -80,6 +84,7 @@ class Task1Runner:
         When True (default), every container log line is printed to stdout
         in real time so you can watch progress interactively.
     """
+    DATASET_FILES: dict[str, str] = {}
 
     def __init__(
         self,
@@ -101,10 +106,6 @@ class Task1Runner:
         # Lazy-initialised Docker client
         self._client: docker.DockerClient | None = None
 
-    # ------------------------------------------------------------------
-    # Docker client (lazy)
-    # ------------------------------------------------------------------
-
     @property
     def client(self) -> docker.DockerClient:
         if self._client is None:
@@ -117,35 +118,27 @@ class Task1Runner:
                 ) from exc
         return self._client
 
-    # ------------------------------------------------------------------
-    # Dataset management
-    # ------------------------------------------------------------------
-
-    def get_dataset_path(self, size: str = "small") -> Path:
+    def get_dataset_path(self, size: str) -> Path:
         """
         Return the local path to the cached HDF5 dataset file.
 
         Downloads from HuggingFace on first call; subsequent calls are instant
         because hf_hub_download checks the local cache first.
-
-        Parameters
-        ----------
-        size:
-            ``"small"`` (200 K vectors) or ``"large"`` (6.35 M vectors).
         """
-        if size not in DATASET_FILES:
+        if size not in self.DATASET_FILES:
             raise ValueError(
-                f"Unknown dataset size {size!r}. Choose from: {list(DATASET_FILES)}"
+                f"Unknown dataset size {size!r}. Choose from: {list(self.DATASET_FILES)}"
             )
-        filename = DATASET_FILES[size]
+        filename = self.DATASET_FILES[size]
         
         # Check local HF cache folder dynamically (safe, generic, and offline-friendly):
         try:
             hf_cache_dir = Path.home() / ".cache" / "huggingface" / "hub" / "datasets--sisap-challenges--SISAP2026"
             if hf_cache_dir.exists():
-                for p in hf_cache_dir.rglob(filename):
+                search_filename = filename.split("/")[-1]
+                for p in hf_cache_dir.rglob(search_filename):
                     if p.is_file() and ".no_exist" not in p.parts:
-                        print(f"[Task1Runner] Found local cached dataset file at: {p}", flush=True)
+                        print(f"[{self.__class__.__name__}] Found local cached dataset file at: {p}", flush=True)
                         return p
         except Exception:
             pass
@@ -157,7 +150,7 @@ class Task1Runner:
                 repo_type=REPO_TYPE,
             )
         except Exception:
-            print("[Task1Runner] HF Hub download failed. Falling back to local cache...", flush=True)
+            print(f"[{self.__class__.__name__}] HF Hub download failed. Falling back to local cache...", flush=True)
             local_path = hf_hub_download(
                 repo_id=REPO_ID,
                 filename=filename,
@@ -166,16 +159,12 @@ class Task1Runner:
             )
         return Path(local_path)
 
-    def get_data_dir(self, size: str = "small") -> Path:
+    def get_data_dir(self, size: str) -> Path:
         """
         Return the directory of the cached HDF5 file (used as the volume-mount
         source for ``/data:ro`` inside the container).
         """
         return self.get_dataset_path(size).parent
-
-    # ------------------------------------------------------------------
-    # Image management
-    # ------------------------------------------------------------------
 
     def build_image(self, tag: str | None = None, force: bool = False) -> None:
         """
@@ -197,19 +186,19 @@ class Task1Runner:
         if not force:
             try:
                 self.client.images.get(tag)
-                print(f"[Task1Runner] Image '{tag}' already exists — skipping build.", flush=True)
+                print(f"[{self.__class__.__name__}] Image '{tag}' already exists — skipping build.", flush=True)
                 return
             except docker.errors.ImageNotFound:
                 pass
 
         nocache = " (no-cache)" if force else ""
-        print(f"[Task1Runner] Building image '{tag}' from {self.dockerfile_dir}{nocache} ...", flush=True)
+        print(f"[{self.__class__.__name__}] Building image '{tag}' from {self.dockerfile_dir}{nocache} ...", flush=True)
         
         # Build arguments detection (e.g. build with FORCE_AVX2=ON if the tag contains avx2)
         buildargs = {}
         if ":" in tag and "avx2" in tag.split(":")[-1].lower():
             buildargs["FORCE_AVX2"] = "ON"
-            print("[Task1Runner] Detected 'avx2' in tag name. Passing buildarg FORCE_AVX2=ON.", flush=True)
+            print(f"[{self.__class__.__name__}] Detected 'avx2' in tag name. Passing buildarg FORCE_AVX2=ON.", flush=True)
 
         _image, logs = self.client.images.build(
             path=str(self.dockerfile_dir),
@@ -222,11 +211,188 @@ class Task1Runner:
             if "stream" in chunk:
                 sys.stdout.write(chunk["stream"])
                 sys.stdout.flush()
-        print(f"[Task1Runner] Image '{tag}' built successfully.", flush=True)
+        print(f"[{self.__class__.__name__}] Image '{tag}' built successfully.", flush=True)
 
-    # ------------------------------------------------------------------
-    # Run
-    # ------------------------------------------------------------------
+    def _resolve_dataset_mount(self, size: str) -> tuple[Path, str]:
+        """
+        Resolves the local dataset parent path to mount and the container path for HDF5.
+
+        We find a common ancestor of the local file and its target so relative symlinks 
+        remain valid inside the container.
+        """
+        data_dir = self.get_data_dir(size).absolute()
+        filename = self.DATASET_FILES[size]
+        local_path = (data_dir / filename.split("/")[-1]).absolute()
+        real_path = local_path.resolve()
+
+        common_ancestor = None
+        if local_path != real_path:
+            p1_parents = [local_path] + list(local_path.parents)
+            for parent in p1_parents:
+                try:
+                    real_path.relative_to(parent)
+                    if len(parent.parts) > 2:  # Avoid root mount (e.g., '/' or 'C:\')
+                        common_ancestor = parent
+                        break
+                except ValueError:
+                    continue
+
+        if common_ancestor is not None:
+            # Mount the common ancestor and reference the dataset relative to it
+            mount_dir = common_ancestor
+            rel_path = local_path.relative_to(common_ancestor)
+            container_hdf5 = f"/data/{rel_path.as_posix()}"
+        else:
+            # Fallback: mount the real file's parent directory and use the real filename
+            mount_dir = real_path.parent
+            container_hdf5 = f"/data/{real_path.name}"
+        return mount_dir, container_hdf5
+
+    def _run_container(
+        self,
+        cmd: list[str],
+        mount_dir: Path,
+        parser: Any,
+        size: str,
+        mode: str,
+        timeout_s: float | None = None,
+    ) -> int:
+        """
+        Runs the container with the formatted command-line argument list and volume mounts.
+        """
+        # ---- Volume mounts ---------------------------------------------------
+        volumes: dict[str, dict[str, str]] = {
+            str(mount_dir): {"bind": "/data", "mode": "ro"},
+            str(self.results_dir): {"bind": "/results", "mode": "rw"},
+        }
+
+        # ---- Resource limits (SISAP-compliant) ------------------------------
+        run_kwargs: dict[str, Any] = {
+            "image":         self.image_tag,
+            "command":       cmd,
+            "volumes":       volumes,
+            "detach":        True,
+            "stderr":        True,
+            "stdout":        True,
+            # CPU limit
+            "nano_cpus":     _NANO_CPUS,
+            # Memory limits (no swap beyond RAM)
+            "mem_limit":     _MEM_LIMIT,
+            "memswap_limit": _MEM_SWAP,
+        }
+
+        print(
+            f"[{self.__class__.__name__}] Starting container - mode={mode!r}, size={size!r}",
+            flush=True,
+        )
+        print(f"[{self.__class__.__name__}] Limits: cpus=8, memory=24g, swap=24g, swappiness=0", flush=True)
+        print(f"[{self.__class__.__name__}] Data mount : {mount_dir} -> /data:ro", flush=True)
+        print(f"[{self.__class__.__name__}] Results    : {self.results_dir} -> /results:rw", flush=True)
+
+        # ---- Start container and stream logs --------------------------------
+        try:
+            container = self.client.containers.run(**run_kwargs)
+        except docker.errors.ImageNotFound:
+            raise RuntimeError(
+                f"Docker image '{self.image_tag}' not found. "
+                f"Run {self.__class__.__name__}().build_image() first."
+            )
+
+        # Optional watchdog: kill the container if it runs past timeout_s. The
+        # blocking logs() stream then ends and wait() returns a non-zero code,
+        # so the caller sees a failed run instead of hanging forever (guards
+        # against pathological build configs in a hyperparameter sweep).
+        timed_out = threading.Event()
+        watchdog: threading.Timer | None = None
+        if timeout_s:
+            def _kill_on_timeout() -> None:
+                timed_out.set()
+                try:
+                    container.kill()
+                except docker.errors.APIError:
+                    pass
+            watchdog = threading.Timer(timeout_s, _kill_on_timeout)
+            watchdog.daemon = True
+            watchdog.start()
+
+        try:
+            # Stream logs line by line as they arrive
+            for raw_chunk in container.logs(stream=True, follow=True):
+                line = raw_chunk.decode("utf-8", errors="replace")
+                parser.feed(line)
+
+            # Wait for container to finish and get exit code
+            result_info = container.wait()
+            exit_code: int = result_info.get("StatusCode", -1)
+
+            if timed_out.is_set():
+                print(
+                    f"[{self.__class__.__name__}] Container exceeded timeout of {timeout_s:.0f}s "
+                    f"and was killed.",
+                    file=sys.stderr,
+                    flush=True,
+                )
+
+        finally:
+            if watchdog is not None:
+                watchdog.cancel()
+            # Always remove the container
+            try:
+                container.remove(force=True)
+            except docker.errors.APIError:
+                pass
+
+        if exit_code != 0:
+            print(
+                f"[{self.__class__.__name__}] Container exited with code {exit_code}.",
+                file=sys.stderr,
+                flush=True,
+            )
+            if parser.errors:
+                for err in parser.errors:
+                    print(f"  ERROR: {err}", file=sys.stderr)
+
+        return exit_code
+
+
+# ---------------------------------------------------------------------------
+# Task 1 Runner
+# ---------------------------------------------------------------------------
+
+class Task1Runner(BaseRunner):
+    """
+    High-level interface for running deglib_evp_task1 inside Docker.
+
+    Parameters
+    ----------
+    image_tag:
+        Name (and optional tag) of the Docker image to use.
+    dockerfile_dir:
+        Directory containing the Dockerfile. Defaults to the parent of this
+        file's package directory (i.e. the project root).
+    results_dir:
+        Local directory mounted as /results inside the container. Created
+        automatically if it does not exist. Defaults to ``<project_root>/results``.
+    echo_logs:
+        When True (default), every container log line is printed to stdout
+        in real time so you can watch progress interactively.
+    """
+    DATASET_FILES = DATASET_FILES_TASK1
+
+    def __init__(
+        self,
+        image_tag: str = _DEFAULT_IMAGE,
+        dockerfile_dir: Path | None = None,
+        results_dir: Path | None = None,
+        echo_logs: bool = True,
+    ) -> None:
+        super().__init__(image_tag, dockerfile_dir, results_dir, echo_logs)
+
+    def get_dataset_path(self, size: str = "small") -> Path:
+        return super().get_dataset_path(size)
+
+    def get_data_dir(self, size: str = "small") -> Path:
+        return super().get_data_dir(size)
 
     def run(
         self,
@@ -242,6 +408,7 @@ class Task1Runner:
         max_dist: int | str = 200,
         evp_k: int | str = 50,
         prune_worst: int = 16,
+        goal_recall: float = 0.8,
         no_recall: bool = False,
         output: str | None = None,
         graph: str | None = None,
@@ -286,40 +453,11 @@ class Task1Runner:
         output:
             ``--output <path>`` (path *inside the container*, e.g. /results/out.ivecs).
         graph:
-            ``--graph <path>`` (path *inside the container*).
+            `--graph <path>`` (path *inside the container*).
         """
         # ---- Ensure results directory exists --------------------------------
         self.results_dir.mkdir(parents=True, exist_ok=True)
-
-        # ---- Resolve dataset -------------------------------------------------
-        # Resolve dataset directories, handling symlinks dynamically (e.g. Hugging Face on Unix).
-        # We find a common ancestor of the local file and its target so relative symlinks remain valid inside the container.
-        data_dir = self.get_data_dir(size).absolute()
-        hdf5_filename = DATASET_FILES[size]
-        local_path = (data_dir / hdf5_filename).absolute()
-        real_path = local_path.resolve()
-
-        common_ancestor = None
-        if local_path != real_path:
-            p1_parents = [local_path] + list(local_path.parents)
-            for parent in p1_parents:
-                try:
-                    real_path.relative_to(parent)
-                    if len(parent.parts) > 2:  # Avoid root mount (e.g., '/' or 'C:\')
-                        common_ancestor = parent
-                        break
-                except ValueError:
-                    continue
-
-        if common_ancestor is not None:
-            # Mount the common ancestor and reference the dataset relative to it
-            mount_dir = common_ancestor
-            rel_path = local_path.relative_to(common_ancestor)
-            container_hdf5 = f"/data/{rel_path.as_posix()}"
-        else:
-            # Fallback: mount the real file's parent directory and use the real filename
-            mount_dir = real_path.parent
-            container_hdf5 = f"/data/{real_path.name}"
+        mount_dir, container_hdf5 = self._resolve_dataset_mount(size)
 
         # ---- Build CLI command -----------------------------------------------
         cmd: list[str] = [
@@ -335,6 +473,7 @@ class Task1Runner:
             "--max-dist",   str(max_dist),
             "--evpK",       str(evp_k),
             "--prune-worst", str(prune_worst),
+            "--goal-recall", str(goal_recall),
         ]
         if no_recall:
             cmd.append("--no-recall")
@@ -343,108 +482,175 @@ class Task1Runner:
         if graph:
             cmd += ["--graph", graph]
 
-        # ---- Volume mounts ---------------------------------------------------
-        volumes: dict[str, dict[str, str]] = {
-            str(mount_dir): {"bind": "/data", "mode": "ro"},
-            str(self.results_dir): {"bind": "/results", "mode": "rw"},
-        }
-
-        # ---- Resource limits (SISAP-compliant) ------------------------------
-        run_kwargs: dict[str, Any] = {
-            "image":         self.image_tag,
-            "command":       cmd,
-            "volumes":       volumes,
-            "detach":        True,
-            "stderr":        True,
-            "stdout":        True,
-            # CPU limit
-            "nano_cpus":     _NANO_CPUS,
-            # Memory limits (no swap beyond RAM)
-            "mem_limit":     _MEM_LIMIT,
-            "memswap_limit": _MEM_SWAP,
-        }
-
-        print(
-            f"[Task1Runner] Starting container - mode={mode!r}, size={size!r}, "
-            f"threads={threads}, max_dist={max_dist}",
-            flush=True,
-        )
-        print(
-            f"[Task1Runner] Limits: cpus=8, memory=24g, swap=24g, swappiness=0",
-            flush=True,
-        )
-        print(f"[Task1Runner] Data mount : {mount_dir} -> /data:ro", flush=True)
-        print(f"[Task1Runner] Results    : {self.results_dir} -> /results:rw", flush=True)
-
-        # ---- Start container and stream logs --------------------------------
         parser = Task1LogParser(echo=self.echo_logs)
+        exit_code = self._run_container(cmd, mount_dir, parser, size, mode, timeout_s)
 
-        try:
-            container = self.client.containers.run(**run_kwargs)
-        except docker.errors.ImageNotFound:
-            raise RuntimeError(
-                f"Docker image '{self.image_tag}' not found. "
-                "Run Task1Runner().build_image() first."
-            )
-
-        # Optional watchdog: kill the container if it runs past timeout_s. The
-        # blocking logs() stream then ends and wait() returns a non-zero code,
-        # so the caller sees a failed run instead of hanging forever (guards
-        # against pathological build configs in a hyperparameter sweep).
-        timed_out = threading.Event()
-        watchdog: threading.Timer | None = None
-        if timeout_s:
-            def _kill_on_timeout() -> None:
-                timed_out.set()
-                try:
-                    container.kill()
-                except docker.errors.APIError:
-                    pass
-            watchdog = threading.Timer(timeout_s, _kill_on_timeout)
-            watchdog.daemon = True
-            watchdog.start()
-
-        try:
-            # Stream logs line by line as they arrive
-            for raw_chunk in container.logs(stream=True, follow=True):
-                line = raw_chunk.decode("utf-8", errors="replace")
-                parser.feed(line)
-
-            # Wait for container to finish and get exit code
-            result_info = container.wait()
-            exit_code: int = result_info.get("StatusCode", -1)
-
-            if timed_out.is_set():
-                print(
-                    f"[Task1Runner] Container exceeded timeout of {timeout_s:.0f}s "
-                    f"and was killed.",
-                    file=sys.stderr,
-                    flush=True,
-                )
-
-        finally:
-            if watchdog is not None:
-                watchdog.cancel()
-            # Always remove the container
-            try:
-                container.remove(force=True)
-            except docker.errors.APIError:
-                pass
-
-        result = parser.build_result(
+        return parser.build_result(
             mode=mode,
             dataset_size=size,
             exit_code=exit_code,
         )
 
-        if exit_code != 0:
-            print(
-                f"[Task1Runner] Container exited with code {exit_code}.",
-                file=sys.stderr,
-                flush=True,
-            )
-            if parser.errors:
-                for err in parser.errors:
-                    print(f"  ERROR: {err}", file=sys.stderr)
 
-        return result
+# ---------------------------------------------------------------------------
+# Task 2 Runner
+# ---------------------------------------------------------------------------
+
+class Task2Runner(BaseRunner):
+    """
+    High-level interface for running deglib_evp_task2 inside Docker.
+
+    Parameters
+    ----------
+    image_tag:
+        Name (and optional tag) of the Docker image to use.
+    dockerfile_dir:
+        Directory containing the Dockerfile. Defaults to the parent of this
+        file's package directory (i.e. the project root).
+    results_dir:
+        Local directory mounted as /results inside the container. Created
+        automatically if it does not exist. Defaults to ``<project_root>/results``.
+    echo_logs:
+        When True (default), every container log line is printed to stdout
+        in real time so you can watch progress interactively.
+    """
+    DATASET_FILES = DATASET_FILES_TASK2
+
+    def __init__(
+        self,
+        image_tag: str = _DEFAULT_IMAGE,
+        dockerfile_dir: Path | None = None,
+        results_dir: Path | None = None,
+        echo_logs: bool = True,
+    ) -> None:
+        super().__init__(image_tag, dockerfile_dir, results_dir, echo_logs)
+
+    def get_dataset_path(self, size: str = "default") -> Path:
+        return super().get_dataset_path(size)
+
+    def get_data_dir(self, size: str = "default") -> Path:
+        return super().get_data_dir(size)
+
+    def run(
+        self,
+        mode: str,
+        size: str = "default",
+        *,
+        threads: int = 8,
+        build_threads: int = 1,
+        k_top: int = 30,
+        k_graph: int = 30,
+        k_ext: int = 30,
+        eps_ext: float = 0.001,
+        max_dist: int | str = 20000,
+        prune_worst: int = 0,
+        eps_search: float | str = 0.3,
+        use_flas: bool = False,
+        flas_metric: str = "l2",
+        flas_radius_decay: float = 0.93,
+        num_runs: int = 1,
+        goal_recall: float = 0.8,
+        opt_target: str = "LowLID",
+        opt_iterations: int = 0,
+        no_recall: bool = False,
+        output: str | None = None,
+        graph: str | None = None,
+        timeout_s: float | None = None,
+    ) -> Task2Result:
+        """
+        Run deglib_evp_task2 in a Docker container and return structured results.
+
+        The container is started with SISAP-compliant resource limits:
+            --cpus=8, --memory=24g, --memory-swap=24g, --memory-swappiness=0
+
+        Volume mounts applied automatically:
+            <hf_cache_dir>    → /data:ro
+            ./results         → /results:rw
+
+        Parameters
+        ----------
+        mode:
+            Benchmark mode passed to the binary (e.g. ``"mode1"`` through ``"mode7"``).
+        size:
+            Dataset size identifier (default: ``"default"``).
+        threads:
+            ``--threads`` argument (number of CPU worker threads used for query exploration).
+        build_threads:
+            ``--build-threads`` argument (number of CPU worker threads used for graph construction).
+        k_top:
+            ``--k-top`` (number of nearest neighbours to retrieve).
+        k_graph:
+            ``--k-graph`` (graph degree).
+        k_ext:
+            ``--k-ext`` (builder search size).
+        eps_ext:
+            ``--eps-ext`` (builder entry-search expansion coefficient).
+        max_dist:
+            ``--max-dist``. Exploration search budget or comma-separated list of budgets.
+        prune_worst:
+            ``--prune-worst`` (number of worst neighbors to replace with self-loops).
+        eps_search:
+            ``--eps-search``. Exploration search expansion coefficient or comma-separated list.
+        use_flas:
+            Pass ``--flas`` to enable FLAS pre-sorting of training vectors before building the graph.
+        flas_metric:
+            ``--flas-metric`` (distance metric for FLAS: l2 or ip).
+        flas_radius_decay:
+            ``--flas-radius-decay`` (FLAS swap radius decay factor per iteration).
+        num_runs:
+            ``--num-runs`` (number of query explorations to perform and average).
+        goal_recall:
+            ``--goal-recall`` (recall threshold threshold for configuration selection sweeps).
+        opt_target:
+            ``--opt-target`` (optimization target for graph builder).
+        opt_iterations:
+            ``--opt-iterations`` (number of graph optimization iterations to perform after building).
+        no_recall:
+            Pass ``--no-recall`` to skip ground-truth loading.
+        output:
+            ``--output <path>`` (path *inside the container*, e.g. /results/out.ivecs).
+        graph:
+            ``--graph <path>`` (path *inside the container*).
+        """
+        # ---- Ensure results directory exists --------------------------------
+        self.results_dir.mkdir(parents=True, exist_ok=True)
+        mount_dir, container_hdf5 = self._resolve_dataset_mount(size)
+
+        # ---- Build CLI command -----------------------------------------------
+        cmd: list[str] = [
+            "task2",
+            container_hdf5,
+            mode,
+            "--threads",            str(threads),
+            "--build-threads",      str(build_threads),
+            "--k-top",              str(k_top),
+            "--k-graph",            str(k_graph),
+            "--k-ext",              str(k_ext),
+            "--eps-ext",            str(eps_ext),
+            "--max-dist",           str(max_dist),
+            "--prune-worst",        str(prune_worst),
+            "--eps-search",         str(eps_search),
+            "--flas-metric",        str(flas_metric),
+            "--flas-radius-decay",  str(flas_radius_decay),
+            "--num-runs",           str(num_runs),
+            "--goal-recall",        str(goal_recall),
+            "--opt-target",         str(opt_target),
+            "--opt-iterations",     str(opt_iterations),
+        ]
+        if use_flas:
+            cmd.append("--flas")
+        if no_recall:
+            cmd.append("--no-recall")
+        if output:
+            cmd += ["--output", output]
+        if graph:
+            cmd += ["--graph", graph]
+
+        parser = Task2LogParser(echo=self.echo_logs)
+        exit_code = self._run_container(cmd, mount_dir, parser, size, mode, timeout_s)
+
+        return parser.build_result(
+            mode=mode,
+            dataset_size=size,
+            exit_code=exit_code,
+        )
