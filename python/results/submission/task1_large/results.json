@@ -1,0 +1,311 @@
+{
+    "system_info": {
+        "cpu_model": "INTEL(R) XEON(R) PLATINUM 8581C CPU @ 2.30GHz",
+        "cpu_physical": 4,
+        "cpu_logical": 8,
+        "ram_total_gb": 29.4,
+        "ram_available_gb": 28.3,
+        "container_cpus": 8,
+        "container_ram_gb": 24.0
+    },
+    "mode4_slot1": {
+        "mode": "evp-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 34.2,
+        "quant_time_s": 15.6,
+        "build_time_s": 156.1,
+        "convert_time_s": 0.0,
+        "explore_time_s": 75.4,
+        "rerank_time_s": 13.8,
+        "overall_time_s": 295.4,
+        "recall_results": [
+            [
+                500,
+                0.7926000000000001
+            ]
+        ],
+        "best_recall": 0.7926000000000001
+    },
+    "mode4_slot2": {
+        "mode": "evp-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 26.2,
+        "quant_time_s": 15.6,
+        "build_time_s": 154.5,
+        "convert_time_s": 0.0,
+        "explore_time_s": 87.3,
+        "rerank_time_s": 13.7,
+        "overall_time_s": 297.7,
+        "recall_results": [
+            [
+                600,
+                0.8018000000000001
+            ]
+        ],
+        "best_recall": 0.8018000000000001
+    },
+    "mode4_slot3": {
+        "mode": "evp-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 28.1,
+        "quant_time_s": 15.7,
+        "build_time_s": 154.7,
+        "convert_time_s": 0.0,
+        "explore_time_s": 98.9,
+        "rerank_time_s": 13.8,
+        "overall_time_s": 311.7,
+        "recall_results": [
+            [
+                700,
+                0.8105
+            ]
+        ],
+        "best_recall": 0.8105
+    },
+    "mode4_slot4": {
+        "mode": "evp-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 26.0,
+        "quant_time_s": 15.6,
+        "build_time_s": 158.7,
+        "convert_time_s": 0.0,
+        "explore_time_s": 109.5,
+        "rerank_time_s": 13.6,
+        "overall_time_s": 324.0,
+        "recall_results": [
+            [
+                800,
+                0.8183
+            ]
+        ],
+        "best_recall": 0.8183
+    },
+    "mode4_slot5": {
+        "mode": "evp-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 28.0,
+        "quant_time_s": 15.6,
+        "build_time_s": 155.0,
+        "convert_time_s": 0.0,
+        "explore_time_s": 119.2,
+        "rerank_time_s": 13.6,
+        "overall_time_s": 331.7,
+        "recall_results": [
+            [
+                900,
+                0.8234999999999999
+            ]
+        ],
+        "best_recall": 0.8234999999999999
+    },
+    "mode4_slot6": {
+        "mode": "evp-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 30.6,
+        "quant_time_s": 15.5,
+        "build_time_s": 157.3,
+        "convert_time_s": 0.0,
+        "explore_time_s": 128.3,
+        "rerank_time_s": 13.4,
+        "overall_time_s": 345.8,
+        "recall_results": [
+            [
+                1000,
+                0.8283
+            ]
+        ],
+        "best_recall": 0.8283
+    },
+    "mode4_slot7": {
+        "mode": "evp-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 28.6,
+        "quant_time_s": 15.7,
+        "build_time_s": 155.0,
+        "convert_time_s": 0.0,
+        "explore_time_s": 142.1,
+        "rerank_time_s": 13.5,
+        "overall_time_s": 355.8,
+        "recall_results": [
+            [
+                1200,
+                0.8348
+            ]
+        ],
+        "best_recall": 0.8348
+    },
+    "mode4_slot8": {
+        "mode": "evp-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 26.7,
+        "quant_time_s": 15.6,
+        "build_time_s": 156.7,
+        "convert_time_s": 0.0,
+        "explore_time_s": 152.6,
+        "rerank_time_s": 13.5,
+        "overall_time_s": 365.9,
+        "recall_results": [
+            [
+                1400,
+                0.8393
+            ]
+        ],
+        "best_recall": 0.8393
+    },
+    "mode4_slot9": {
+        "mode": "evp-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 25.4,
+        "quant_time_s": 16.0,
+        "build_time_s": 195.6,
+        "convert_time_s": 0.0,
+        "explore_time_s": 119.5,
+        "rerank_time_s": 13.7,
+        "overall_time_s": 370.7,
+        "recall_results": [
+            [
+                900,
+                0.8426
+            ]
+        ],
+        "best_recall": 0.8426
+    },
+    "mode4_slot10": {
+        "mode": "evp-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 29.4,
+        "quant_time_s": 16.0,
+        "build_time_s": 195.1,
+        "convert_time_s": 0.0,
+        "explore_time_s": 127.3,
+        "rerank_time_s": 26.9,
+        "overall_time_s": 395.2,
+        "recall_results": [
+            [
+                800,
+                0.8478
+            ]
+        ],
+        "best_recall": 0.8478
+    },
+    "mode7_slot11": {
+        "mode": "evp-asymmetric-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 28.6,
+        "quant_time_s": 15.9,
+        "build_time_s": 180.5,
+        "convert_time_s": 1.1458,
+        "explore_time_s": 95.8,
+        "rerank_time_s": 13.0,
+        "overall_time_s": 335.2,
+        "recall_results": [
+            [
+                400,
+                0.8069
+            ]
+        ],
+        "best_recall": 0.8069
+    },
+    "mode7_slot12": {
+        "mode": "evp-asymmetric-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 35.0,
+        "quant_time_s": 16.1,
+        "build_time_s": 199.1,
+        "convert_time_s": 1.2089,
+        "explore_time_s": 92.6,
+        "rerank_time_s": 13.3,
+        "overall_time_s": 357.7,
+        "recall_results": [
+            [
+                400,
+                0.8148000000000001
+            ]
+        ],
+        "best_recall": 0.8148000000000001
+    },
+    "mode7_slot13": {
+        "mode": "evp-asymmetric-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 36.4,
+        "quant_time_s": 16.0,
+        "build_time_s": 198.1,
+        "convert_time_s": 1.2066,
+        "explore_time_s": 114.7,
+        "rerank_time_s": 12.9,
+        "overall_time_s": 379.8,
+        "recall_results": [
+            [
+                500,
+                0.8270000000000001
+            ]
+        ],
+        "best_recall": 0.8270000000000001
+    },
+    "mode7_slot14": {
+        "mode": "evp-asymmetric-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 37.0,
+        "quant_time_s": 16.0,
+        "build_time_s": 195.7,
+        "convert_time_s": 1.2010999999999998,
+        "explore_time_s": 136.2,
+        "rerank_time_s": 13.1,
+        "overall_time_s": 399.4,
+        "recall_results": [
+            [
+                600,
+                0.8376
+            ]
+        ],
+        "best_recall": 0.8376
+    },
+    "mode7_slot15": {
+        "mode": "evp-asymmetric-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 34.6,
+        "quant_time_s": 15.8,
+        "build_time_s": 179.9,
+        "convert_time_s": 1.1236,
+        "explore_time_s": 190.6,
+        "rerank_time_s": 20.0,
+        "overall_time_s": 442.7,
+        "recall_results": [
+            [
+                800,
+                0.8487
+            ]
+        ],
+        "best_recall": 0.8487
+    }
+}

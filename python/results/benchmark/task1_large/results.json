@@ -1,0 +1,131 @@
+{
+    "system_info": {
+        "cpu_model": "INTEL(R) XEON(R) PLATINUM 8581C CPU @ 2.30GHz",
+        "cpu_physical": 4,
+        "cpu_logical": 8,
+        "ram_total_gb": 29.4,
+        "ram_available_gb": 28.3,
+        "container_cpus": 8,
+        "container_ram_gb": 24.0
+    },
+    "mode1": {
+        "mode": "fp16",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 32.9,
+        "quant_time_s": 0.0,
+        "build_time_s": 448.9,
+        "convert_time_s": 0.0,
+        "explore_time_s": 28.8,
+        "rerank_time_s": 0.0,
+        "overall_time_s": 510.7,
+        "recall_results": [
+            [
+                1,
+                0.7683
+            ]
+        ],
+        "best_recall": 0.7683
+    },
+    "mode3": {
+        "mode": "evp",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 11.1,
+        "quant_time_s": 17.0,
+        "build_time_s": 176.2,
+        "convert_time_s": 0.0,
+        "explore_time_s": 24.4,
+        "rerank_time_s": 0.0,
+        "overall_time_s": 228.7,
+        "recall_results": [
+            [
+                1,
+                0.6448999999999999
+            ]
+        ],
+        "best_recall": 0.6448999999999999
+    },
+    "mode4": {
+        "mode": "evp-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 6.7565,
+        "quant_time_s": 15.7,
+        "build_time_s": 189.8,
+        "convert_time_s": 0.0,
+        "explore_time_s": 37.1,
+        "rerank_time_s": 13.4,
+        "overall_time_s": 263.0,
+        "recall_results": [
+            [
+                200,
+                0.7631999999999999
+            ]
+        ],
+        "best_recall": 0.7631999999999999
+    },
+    "mode5": {
+        "mode": "evp-build-fp16-external-search",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 35.7,
+        "quant_time_s": 15.8,
+        "build_time_s": 187.4,
+        "convert_time_s": 2.3482,
+        "explore_time_s": 57.3,
+        "rerank_time_s": 0.0,
+        "overall_time_s": 298.6,
+        "recall_results": [
+            [
+                1,
+                0.768
+            ]
+        ],
+        "best_recall": 0.768
+    },
+    "mode6": {
+        "mode": "evp-asymmetric",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 33.5,
+        "quant_time_s": 15.6,
+        "build_time_s": 191.8,
+        "convert_time_s": 1.2163,
+        "explore_time_s": 45.5,
+        "rerank_time_s": 0.0,
+        "overall_time_s": 287.6,
+        "recall_results": [
+            [
+                1,
+                0.687
+            ]
+        ],
+        "best_recall": 0.687
+    },
+    "mode7": {
+        "mode": "evp-asymmetric-rerank",
+        "dataset_size": "large",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 42.4,
+        "quant_time_s": 15.6,
+        "build_time_s": 187.7,
+        "convert_time_s": 1.2029,
+        "explore_time_s": 51.1,
+        "rerank_time_s": 13.8,
+        "overall_time_s": 312.1,
+        "recall_results": [
+            [
+                200,
+                0.7675
+            ]
+        ],
+        "best_recall": 0.7675
+    }
+}
