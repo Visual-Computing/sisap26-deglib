@@ -155,7 +155,7 @@ def _fmt_recall(val: float | None) -> str:
     return f"{val:.2f}%"
 
 
-def run_mode(runner: Task1Runner, cfg: ModeConfig) -> Task1Result | None:
+def run_mode(runner: Task1Runner, cfg: ModeConfig, num_threads: int) -> Task1Result | None:
     print(f"\n{'='*60}")
     print(f"  Running: {cfg.label}")
     print(f"  Settings: {cfg.settings}")
@@ -171,7 +171,7 @@ def run_mode(runner: Task1Runner, cfg: ModeConfig) -> Task1Result | None:
         max_dist=cfg.max_dist,
         evp_k=cfg.evp_k,
         eps_ext=cfg.eps_ext,
-        threads=8,
+        threads=num_threads,
     )
 
     try:
@@ -296,10 +296,11 @@ def main() -> None:
     runner = Task1Runner(results_dir=Path(__file__).parent / "results", echo_logs=True)
     runner.build_image(force=False)
 
+    num_threads = runner.cpu_limit
     results: dict[str, Task1Result] = {}
     for cfg in MODES:
         sys.stdout.flush()
-        result = run_mode(runner, cfg)
+        result = run_mode(runner, cfg, num_threads)
         results[cfg.name] = result
         sys.stdout.flush()
 

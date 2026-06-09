@@ -58,7 +58,7 @@ MODES: list[ModeConfig] = [
 ]
 
 
-def run_mode(runner: Task2Runner, cfg: ModeConfig) -> Task2Result | None:
+def run_mode(runner: Task2Runner, cfg: ModeConfig, num_threads: int) -> Task2Result | None:
     print(f"\n{'='*60}")
     print(f"  Running: {cfg.label}")
     print(f"  Settings: {cfg.settings} | eps_search={cfg.eps_search}")
@@ -69,6 +69,7 @@ def run_mode(runner: Task2Runner, cfg: ModeConfig) -> Task2Result | None:
         k_ext=cfg.k_ext,
         k_graph=cfg.k_graph,
         eps_ext=cfg.eps_ext,
+        threads=num_threads,
         build_threads=cfg.build_threads,
         max_dist=cfg.max_dist,
         eps_search=cfg.eps_search,
@@ -206,11 +207,12 @@ def main() -> None:
     runner = Task2Runner(results_dir=Path(__file__).parent / "results", echo_logs=True)
     runner.build_image(force=False)
 
+    num_threads = runner.cpu_limit
     results: dict[str, Task2Result] = {}
 
     for cfg in MODES:
         sys.stdout.flush()
-        result = run_mode(runner, cfg)
+        result = run_mode(runner, cfg, num_threads)
         results[cfg.name] = result
         sys.stdout.flush()
 

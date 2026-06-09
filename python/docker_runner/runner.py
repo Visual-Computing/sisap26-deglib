@@ -1,5 +1,5 @@
 """
-runner.py — Task1Runner and Task2Runner: Docker container management for deglib_evp.
+runner.py — Task1Runner and Task2Runner: Docker container management for deglib_sisap.
 
 Responsibilities
 ----------------
@@ -117,6 +117,11 @@ class BaseRunner:
                     "Make sure Docker Desktop (or the Docker daemon) is running."
                 ) from exc
         return self._client
+
+    @property
+    def cpu_limit(self) -> int:
+        """Return the number of CPU threads allocated to the container."""
+        return _NANO_CPUS // 1_000_000_000
 
     def get_dataset_path(self, size: str) -> Path:
         """
@@ -361,7 +366,7 @@ class BaseRunner:
 
 class Task1Runner(BaseRunner):
     """
-    High-level interface for running deglib_evp_task1 inside Docker.
+    High-level interface for running deglib_sisap task1 inside Docker.
 
     Parameters
     ----------
@@ -415,7 +420,7 @@ class Task1Runner(BaseRunner):
         timeout_s: float | None = None,
     ) -> Task1Result:
         """
-        Run deglib_evp_task1 in a Docker container and return structured results.
+        Run deglib_sisap task1 in a Docker container and return structured results.
 
         The container is started with SISAP-compliant resource limits:
             --cpus=8, --memory=24g, --memory-swap=24g, --memory-swappiness=0
@@ -498,7 +503,7 @@ class Task1Runner(BaseRunner):
 
 class Task2Runner(BaseRunner):
     """
-    High-level interface for running deglib_evp_task2 inside Docker.
+    High-level interface for running deglib_sisap task2 inside Docker.
 
     Parameters
     ----------
@@ -558,7 +563,7 @@ class Task2Runner(BaseRunner):
         timeout_s: float | None = None,
     ) -> Task2Result:
         """
-        Run deglib_evp_task2 in a Docker container and return structured results.
+        Run deglib_sisap task2 in a Docker container and return structured results.
 
         The container is started with SISAP-compliant resource limits:
             --cpus=8, --memory=24g, --memory-swap=24g, --memory-swappiness=0

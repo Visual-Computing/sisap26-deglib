@@ -61,13 +61,13 @@ def _strip_ansi(text: str) -> str:
     return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 
-def run_mode(runner: Task1Runner, cfg: ModeConfig) -> Task1Result | None:
+def run_mode(runner: Task1Runner, cfg: ModeConfig, num_threads: int) -> Task1Result | None:
     print(f"\n{'='*60}")
     print(f"  Mode {cfg.name[4:]} — {cfg.label}")
     print(f"  Settings: {cfg.settings}")
     print(f"{'='*60}\n")
 
-    kwargs: dict = dict(mode=cfg.mode, size="large", max_dist=cfg.max_dist)
+    kwargs: dict = dict(mode=cfg.mode, size="large", max_dist=cfg.max_dist, threads=num_threads)
     if cfg.evp_k is not None:
         kwargs["evp_k"] = cfg.evp_k
 
@@ -230,11 +230,12 @@ def main() -> None:
     runner = Task1Runner(results_dir=Path(__file__).parent / "results", echo_logs=True)
     runner.build_image(force=False)
 
+    num_threads = runner.cpu_limit
     results: dict[str, Task1Result] = {}
 
     for cfg in MODES:
         sys.stdout.flush()
-        result = run_mode(runner, cfg)
+        result = run_mode(runner, cfg, num_threads)
         results[cfg.name] = result
         sys.stdout.flush()
 
