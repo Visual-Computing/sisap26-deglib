@@ -132,7 +132,7 @@ class BaseRunner:
 
         Keys
         ----
-        cpu_model      : processor model string (may be empty on Linux)
+        cpu_model      : processor model string (e.g. "Intel Core i7-13700K")
         cpu_physical   : number of physical CPU cores
         cpu_logical    : number of logical CPU threads
         ram_total_gb   : total installed RAM in GiB (rounded to 1 decimal)
@@ -140,8 +140,18 @@ class BaseRunner:
         container_cpus : CPU threads given to the container (SISAP limit)
         container_ram_gb: RAM given to the container in GiB (SISAP limit)
         """
+        # --- CPU model: py-cpuinfo → platform.processor() → platform.machine()
+        cpu_model: str = ""
+        try:
+            import cpuinfo
+            cpu_model = cpuinfo.get_cpu_info().get("brand_raw", "")
+        except Exception:
+            pass
+        if not cpu_model:
+            cpu_model = platform.processor() or platform.machine()
+
         info: dict = {
-            "cpu_model": platform.processor() or platform.machine(),
+            "cpu_model": cpu_model,
             "cpu_physical": None,
             "cpu_logical": os.cpu_count(),
             "ram_total_gb": None,
@@ -156,22 +166,10 @@ class BaseRunner:
             vm = psutil.virtual_memory()
             info["ram_total_gb"] = round(vm.total / 1024**3, 1)
             info["ram_available_gb"] = round(vm.available / 1024**3, 1)
-            # Try to get a nicer CPU name on Windows
-            try:
-                import subprocess
-                result = subprocess.run(
-                    ["wmic", "cpu", "get", "Name", "/value"],
-                    capture_output=True, text=True, timeout=3
-                )
-                for line in result.stdout.splitlines():
-                    if line.startswith("Name="):
-                        info["cpu_model"] = line[5:].strip()
-                        break
-            except Exception:
-                pass
         except ImportError:
             pass
         return info
+
 
     @property
     def client(self) -> docker.DockerClient:
