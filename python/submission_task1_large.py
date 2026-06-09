@@ -161,7 +161,6 @@ def run_mode(runner: Task1Runner, cfg: ModeConfig, num_threads: int) -> Task1Res
     print(f"  Settings: {cfg.settings}")
     print(f"{'='*60}\n")
 
-    graph_name = f"graph_kg{cfg.k_graph}_nz{cfg.non_zeros}_kext{cfg.k_ext}_prune{cfg.prune_worst}.deglib"
     kwargs: dict = dict(
         mode=cfg.mode,
         size="large",
@@ -173,7 +172,6 @@ def run_mode(runner: Task1Runner, cfg: ModeConfig, num_threads: int) -> Task1Res
         evp_k=cfg.evp_k,
         eps_ext=cfg.eps_ext,
         threads=num_threads,
-        graph=f"/results/{graph_name}",
     )
 
     try:
