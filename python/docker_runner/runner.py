@@ -203,12 +203,20 @@ class Task1Runner:
                 pass
 
         nocache = " (no-cache)" if force else ""
-        print(f"[Task1Runner] Building image '{tag}' from {self.dockerfile_dir}{nocache} …", flush=True)
+        print(f"[Task1Runner] Building image '{tag}' from {self.dockerfile_dir}{nocache} ...", flush=True)
+        
+        # Build arguments detection (e.g. build with FORCE_AVX2=ON if the tag contains avx2)
+        buildargs = {}
+        if ":" in tag and "avx2" in tag.split(":")[-1].lower():
+            buildargs["FORCE_AVX2"] = "ON"
+            print("[Task1Runner] Detected 'avx2' in tag name. Passing buildarg FORCE_AVX2=ON.", flush=True)
+
         _image, logs = self.client.images.build(
             path=str(self.dockerfile_dir),
             tag=tag,
             nocache=force,
             rm=True,
+            buildargs=buildargs,
         )
         for chunk in logs:
             if "stream" in chunk:
