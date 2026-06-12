@@ -111,8 +111,9 @@ class BaseRunner:
         # Resolve project root relative to this file: docker_runner/ → project/
         _pkg_dir = Path(__file__).parent
         _project_root = _pkg_dir.parent
+        _cpp_root = _project_root.parent / "cpp"
 
-        self.dockerfile_dir = Path(dockerfile_dir) if dockerfile_dir else _project_root
+        self.dockerfile_dir = Path(dockerfile_dir) if dockerfile_dir else _cpp_root
         self.results_dir = Path(results_dir) if results_dir else _project_root / "results"
         self.echo_logs = echo_logs
 
@@ -274,6 +275,7 @@ class BaseRunner:
 
         _image, logs = self.client.images.build(
             path=str(self.dockerfile_dir),
+            dockerfile="../python/Dockerfile",
             tag=tag,
             nocache=force,
             rm=True,

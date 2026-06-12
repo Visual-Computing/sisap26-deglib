@@ -14,13 +14,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         make \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /build
+# Copy local cpp directory
+COPY . /build/cpp
 
-# Clone the evp branch with all submodules (fmt lives in external/fmt)
-RUN git clone --recurse-submodules -b evp \
-        https://github.com/Visual-Computing/DynamicExplorationGraph.git
-
-WORKDIR /build/DynamicExplorationGraph/cpp
+WORKDIR /build/cpp
 
 # Configure:
 #   - Release build for maximum performance
@@ -56,7 +53,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy only the compiled binary from the builder stage
 COPY --from=builder \
-    /build/DynamicExplorationGraph/cpp/build/bin/deglib_sisap \
+    /build/cpp/build/bin/deglib_sisap \
     /usr/local/bin/deglib_sisap
 
 # Create the expected mount-points:

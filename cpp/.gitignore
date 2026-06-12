@@ -1,0 +1,7 @@
+build/
+.vscode/
+CMakePresets.json
+cmake-build*
+data/
+.cache/
+AGENTS.md
