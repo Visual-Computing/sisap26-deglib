@@ -7,6 +7,7 @@ generates a Recall vs Search Time plot, and saves all outputs
 (plot, JSON, and Markdown summary) to results/submission/task2.
 """
 from __future__ import annotations
+from typing import Any
 
 import json
 import re
@@ -39,20 +40,20 @@ MODES: list[ModeConfig] = [
         name="mode5_flas",
         mode="mode5",
         label="Mode 5: L2 Build (d+1) & FP16 IP Explore (+ FLAS)",
-        settings="k_ext=64, k_graph=32, runs=10",
-        max_dist="5000,6000,7000,8000",
+        settings="k_ext=64, k_graph=32, runs=100",
+        max_dist="6000,6500,7000,7500,8000,9000",
         eps_search="0.18",
-        num_runs=10,
+        num_runs=100,
         use_flas=True,
     ),
     ModeConfig(
         name="mode7_flas",
         mode="mode7",
         label="Mode 7: L2 Build (d+2) & FP16 L2 Explore (+ FLAS)",
-        settings="k_ext=64, k_graph=32, runs=10",
-        max_dist="5000,5500,6000,6200,6300,6500,7000",
+        settings="k_ext=64, k_graph=32, runs=100",
+        max_dist="5500,6000,6250,6500,6750,7000,8000",
         eps_search="0.007",
-        num_runs=10,
+        num_runs=100,
         use_flas=True,
     ),
 ]
