@@ -219,6 +219,7 @@ static int run(
     bool loaded = false;
     double quantize_ms = 0.0;
     double build_ms = 0.0;
+    double graph_load_ms = 0.0;
 
     if (!graph_path.empty() && std::filesystem::exists(graph_path)) {
         double t_load_graph_start = sisap_common::now_ms();
@@ -228,8 +229,8 @@ static int run(
         if (fs.metric() == deglib::Metric::EvpBits && fs.dim() == dims && g.size() == count) {
             graph_ptr = std::make_unique<deglib::graph::SizeBoundedGraph>(std::move(g));
             loaded = true;
-            double load_graph_ms = sisap_common::now_ms() - t_load_graph_start;
-            std::printf("Graph loaded successfully in %.2f ms\n", load_graph_ms);
+            graph_load_ms = sisap_common::now_ms() - t_load_graph_start;
+            std::printf("Graph loaded successfully in %.2f ms\n", graph_load_ms);
         } else {
             std::fprintf(stderr, "Warning: Saved graph properties do not match dataset: metric=%d vs %d, dim=%u vs %zu, size=%u vs %zu. Rebuilding.\n",
                          (int)fs.metric(), (int)deglib::Metric::EvpBits, (unsigned)fs.dim(), dims, g.size(), count);
@@ -301,7 +302,10 @@ static int run(
     double prune_ms = sisap_common::prune_worst_neighbors(graph, prune_worst, threads);
 
     // One-time graph construction cost shared by every operating point.
-    double build_time_s = (load_ms + quantize_ms + build_ms + prune_ms) / 1000.0;
+    double build_time_s = (load_ms + graph_load_ms + quantize_ms + build_ms + prune_ms) / 1000.0;
+    if (!compute_recall && !output_path.empty()) {
+        std::filesystem::create_directories(output_path);
+    }
 
     // --------------------------------------------------------------------------
     // Exploration

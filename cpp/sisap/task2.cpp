@@ -274,7 +274,8 @@ int main(int argc, char* argv[]) {
             // per (eps_search, max_dist) operating point. Other modes write a single
             // file and would silently overwrite a sweep, so keep them single-point.
             const bool multi_point_capable =
-                (mode == "l2-fp16-ip" || mode == "l2-build-fp16-ip-explore" || mode == "mode5");
+                (mode == "l2-fp16-ip" || mode == "l2-build-fp16-ip-explore" || mode == "mode5" ||
+                 mode == "l2-fp16-d2" || mode == "l2-build-fp16-d2-explore" || mode == "mode7");
             if (!multi_point_capable && (max_dist_list.size() > 1 || eps_search_list.size() > 1)) {
                 std::fprintf(stderr, "Error: Multiple --max-dist/--eps-search values in save mode are only supported by mode5/mode7.\n");
                 return 1;

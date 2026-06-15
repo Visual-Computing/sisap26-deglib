@@ -236,7 +236,8 @@ int main(int argc, char* argv[]) {
             // operating point. The other modes write a single file and would
             // silently overwrite a sweep, so they keep the single-point restriction.
             const bool multi_point_capable =
-                (mode == "evp-build-evp-explore-fp16-rerank" || mode == "evp-rerank" || mode == "mode4");
+                (mode == "evp-build-evp-explore-fp16-rerank" || mode == "evp-rerank" || mode == "mode4" ||
+                 mode == "evp-build-fp16-asymmetric-search-rerank" || mode == "evp-asymmetric-rerank" || mode == "mode7");
             if (!multi_point_capable && (max_dist_list.size() > 1 || evpK_list.size() > 1)) {
                 std::fprintf(stderr, "Error: Multiple --max-dist/--evpK values in save mode are only supported by mode4/mode7.\n");
                 return 1;

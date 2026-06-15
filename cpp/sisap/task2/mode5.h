@@ -472,6 +472,9 @@ static int run(
     // One-time index construction cost shared by every operating point (task 2 is
     // scored on query time, so this lands in the buildtime attribute).
     double build_time_s = (load_ms + transform_ms + build_ms + convert_ms + prune_ms + flas_ms + opt_ms) / 1000.0;
+    if (!compute_recall && !output_path.empty()) {
+        std::filesystem::create_directories(output_path);
+    }
 
     float best_recall = -1.0f;
     float best_eps_search = 0.1f;
