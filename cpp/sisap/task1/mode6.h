@@ -55,10 +55,12 @@ static ExplorationTimings run_exploration(
     bool compute_recall,
     const std::vector<std::vector<int32_t>>& gt_data,
     const std::string& output_path,
-    const std::vector<std::vector<std::byte>>& query_data_vecs)
+    const std::vector<std::vector<std::byte>>& query_data_vecs,
+    double build_time_s)
 {
     size_t count = graph.size();
     std::vector<std::vector<uint32_t>> results(count);
+    std::vector<std::vector<float>> results_dists(count);
 
     double t_start = sisap_common::now_ms();
 
@@ -89,17 +91,22 @@ static ExplorationTimings run_exploration(
                     max_distance_count + 1);
 
                 auto& res = results[label];
+                auto& rdist = results_dists[label];
                 res.reserve(result_queue.size());
+                rdist.reserve(result_queue.size());
                 while (!result_queue.empty()) {
-                    const auto cand_idx = result_queue.top().getInternalIndex();
-                    if (cand_idx != entry_idx) {
-                        res.push_back(graph.getExternalLabel(cand_idx));
+                    const auto& top = result_queue.top();
+                    if (top.getInternalIndex() != entry_idx) {
+                        res.push_back(graph.getExternalLabel(top.getInternalIndex()));
+                        rdist.push_back(top.getDistance());
                     }
                     result_queue.pop();
                 }
                 std::reverse(res.begin(), res.end());
+                std::reverse(rdist.begin(), rdist.end());
                 if (res.size() > k_top) {
                     res.resize(k_top);
+                    rdist.resize(k_top);
                 }
             }
             chunk_search_times[chunk_id] = sisap_common::now_ms() - t_search_start;
@@ -112,7 +119,11 @@ static ExplorationTimings run_exploration(
     if (compute_recall) {
         recall = sisap_common::compute_recall(gt_data, results, k_top);
     } else {
-        sisap_common::ivecs_write(output_path, results);
+        for (size_t i = 0; i < count; ++i) {
+            results[i].resize(k_top, std::numeric_limits<uint32_t>::max());
+            results_dists[i].resize(k_top, std::numeric_limits<float>::max());
+        }
+        sisap_common::write_knns_dists(output_path, results, results_dists, build_time_s, sum_search_ms / 1000.0);
     }
 
     return { sum_search_ms, recall };
@@ -163,6 +174,7 @@ static int run(
     bool loaded = false;
     double quantize_ms = 0.0;
     double build_ms = 0.0;
+    double graph_load_ms = 0.0;
 
     if (!graph_path.empty() && std::filesystem::exists(graph_path)) {
         double t_load_graph_start = sisap_common::now_ms();
@@ -172,8 +184,8 @@ static int run(
         if (fs.metric() == deglib::Metric::EvpBits && fs.dim() == dims && g.size() == count) {
             graph_ptr = std::make_unique<deglib::graph::SizeBoundedGraph>(std::move(g));
             loaded = true;
-            double load_graph_ms = sisap_common::now_ms() - t_load_graph_start;
-            std::printf("Graph loaded successfully in %.2f ms\n", load_graph_ms);
+            graph_load_ms = sisap_common::now_ms() - t_load_graph_start;
+            std::printf("Graph loaded successfully in %.2f ms\n", graph_load_ms);
         } else {
             std::fprintf(stderr, "Warning: Saved graph properties do not match dataset: metric=%d vs %d, dim=%u vs %zu, size=%u vs %zu. Rebuilding.\n",
                          (int)fs.metric(), (int)deglib::Metric::EvpBits, (unsigned)fs.dim(), dims, g.size(), count);
@@ -253,14 +265,23 @@ static int run(
     deglib::graph::ReadOnlyGraph readonly_asym_graph(static_cast<uint32_t>(count), graph.getEdgesPerVertex(), asymmetric_space, graph);
     conversion_ms = sisap_common::now_ms() - t_copy_start;
 
+    double build_time_s = (load_ms + graph_load_ms + quantize_ms + build_ms + prune_ms + conversion_ms) / 1000.0;
+    if (!compute_recall && !output_path.empty()) {
+        std::filesystem::create_directories(output_path);
+    }
+
     std::printf("Starting exploration: k_top=%u, prune_worst=%u, threads=%u\n", k_top, prune_worst, threads);
     uint32_t best_max_dist = 0;
     float best_recall = -1.0f;
     ExplorationTimings best_timings;
 
     for (uint32_t max_dist_val : max_dist_list) {
+        std::string point_output;
+        if (!compute_recall && !output_path.empty()) {
+            point_output = output_path + "/op_md" + std::to_string(max_dist_val) + ".bin";
+        }
         auto timings = run_exploration(readonly_asym_graph, k_top, max_dist_val, static_cast<uint8_t>(threads),
-                                             compute_recall, gt_data, output_path, train_vectors);
+                                             compute_recall, gt_data, point_output, train_vectors, build_time_s);
 
         std::printf("  max_dist=%u has recall %.2f %% and time %.1f s\n",
                     max_dist_val, timings.recall * 100.0f, timings.explore_ms / 1000.0);
