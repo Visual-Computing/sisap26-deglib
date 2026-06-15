@@ -1,0 +1,8 @@
+{
+    "task": "task1",
+    "data": "train",
+    "gt_I": ["allknn", "knns"],
+    "k": 15,
+    "dataset_name": "wikipedia-small",
+    "filename": "benchmark-dev-wikipedia-bge-m3-small.h5"
+}
