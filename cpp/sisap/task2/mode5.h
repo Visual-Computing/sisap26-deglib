@@ -120,7 +120,10 @@ static ExplorationTimings run_search(
     double build_time_s = 0.0)
 {
     size_t count = queries.size();
-    const size_t chunk_size = 8192;
+    // Aim for ~8 chunks per thread so even small query sets spread across all
+    // threads (a fixed large chunk would serialise e.g. Q=1000 onto one thread).
+    const size_t chunk_size = std::max<size_t>(
+        1, (count + static_cast<size_t>(threads) * 8 - 1) / (static_cast<size_t>(threads) * 8));
     const size_t num_chunks = (count + chunk_size - 1) / chunk_size;
     std::vector<std::vector<uint32_t>> results(count);
     std::vector<std::vector<float>> results_dists(count);
