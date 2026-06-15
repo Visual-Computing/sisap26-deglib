@@ -31,11 +31,15 @@ jobs:
       - name: Run all spot-checks (TIRA command schema)
         run: |
           set -euo pipefail
+          # TIRA grants 8 vCPUs, but Docker rejects --cpus above the host count and
+          # GitHub's hosted runner has only 2 — so cap --cpus to what's available.
+          CPUS=$(( $(nproc) < 8 ? $(nproc) : 8 ))
+          echo "Using --cpus=$CPUS (host has $(nproc) CPUs; TIRA uses 8)"
           for dir in task-1-spot-check task-2-spot-check task-3-spot-check; do
             echo "=== $dir ==="
             mkdir -p "results/$dir"
             docker run --rm --user "$(id -u):$(id -g)" \
-              --cpus=8 --memory=24g --memory-swap=24g --memory-swappiness=0 \
+              --cpus="$CPUS" --memory=24g --memory-swap=24g --memory-swappiness=0 \
               --volume "$(pwd)/submission/data/$dir:/app/data/ds:ro" \
               --volume "$(pwd)/results/$dir:/app/results:rw" \
               sisap-deglib \
