@@ -62,11 +62,13 @@ static ExplorationTimings run_exploration(
     const std::vector<std::vector<std::byte>>& train_vectors,
     bool compute_recall,
     const std::vector<std::vector<int32_t>>& gt_data,
-    const std::string& output_path)
+    const std::string& output_path,
+    double build_time_s)
 {
     size_t count = graph.size();
     deglib::FloatSpace fp16_rerank_space(static_cast<uint32_t>(dims), deglib::Metric::FP16InnerProduct);
     std::vector<std::vector<uint32_t>> results(count);
+    std::vector<std::vector<float>> results_dists(count);
 
     double t_start = sisap_common::now_ms();
 
@@ -143,8 +145,12 @@ static ExplorationTimings run_exploration(
                 auto& result = results[label];
                 result.resize(k_top);
                 std::fill(result.begin(), result.end(), std::numeric_limits<uint32_t>::max());
+                auto& result_dist = results_dists[label];
+                result_dist.resize(k_top);
+                std::fill(result_dist.begin(), result_dist.end(), std::numeric_limits<float>::max());
                 for (uint32_t j = 0; j < n; ++j) {
                     result[j] = candidates[j].label;
+                    result_dist[j] = candidates[j].distance;
                 }
             }
             chunk_rerank_times[chunk_id] = sisap_common::now_ms() - t_rerank_start;
@@ -158,7 +164,7 @@ static ExplorationTimings run_exploration(
     if (compute_recall) {
         recall = sisap_common::compute_recall(gt_data, results, k_top);
     } else {
-        sisap_common::ivecs_write(output_path, results);
+        sisap_common::write_knns_dists(output_path, results, results_dists, build_time_s, total_ms / 1000.0);
     }
 
     return { sum_search_ms, sum_rerank_ms, total_ms, recall };
@@ -294,6 +300,9 @@ static int run(
 
     double prune_ms = sisap_common::prune_worst_neighbors(graph, prune_worst, threads);
 
+    // One-time graph construction cost shared by every operating point.
+    double build_time_s = (load_ms + quantize_ms + build_ms + prune_ms) / 1000.0;
+
     // --------------------------------------------------------------------------
     // Exploration
     // --------------------------------------------------------------------------
@@ -306,9 +315,14 @@ static int run(
     for (uint32_t evpK_val : evpK_list) {
         for (uint32_t max_dist_val : max_dist_list) {
             const uint32_t k_search = evpK_val;
+            std::string point_output;
+            if (!compute_recall && !output_path.empty()) {
+                point_output = output_path + "/op_evpK" + std::to_string(evpK_val) +
+                               "_md" + std::to_string(max_dist_val) + ".bin";
+            }
             auto timings = run_exploration(graph, k_search, max_dist_val, static_cast<uint8_t>(threads),
                                                  k_top, dims, train_vectors,
-                                                 compute_recall, gt_data, output_path);
+                                                 compute_recall, gt_data, point_output, build_time_s);
 
             std::printf("  evpK=%u, max_dist=%u has recall %.2f %% and time %.1f s\n",
                         evpK_val, max_dist_val, timings.recall * 100.0f, timings.total_ms / 1000.0);

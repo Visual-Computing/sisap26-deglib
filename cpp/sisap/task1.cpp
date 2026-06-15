@@ -231,8 +231,14 @@ int main(int argc, char* argv[]) {
                 std::fprintf(stderr, "Error: --output path must be specified when --no-recall is set.\n");
                 return 1;
             }
-            if (max_dist_list.size() > 1 || evpK_list.size() > 1) {
-                std::fprintf(stderr, "Error: Multiple parameters for --max-dist or --evpK are not allowed when --no-recall is set.\n");
+            // In save mode --output is treated as a DIRECTORY: only the reranking
+            // modes (mode4/mode7) write one result file per (evpK, max_dist)
+            // operating point. The other modes write a single file and would
+            // silently overwrite a sweep, so they keep the single-point restriction.
+            const bool multi_point_capable =
+                (mode == "evp-build-evp-explore-fp16-rerank" || mode == "evp-rerank" || mode == "mode4");
+            if (!multi_point_capable && (max_dist_list.size() > 1 || evpK_list.size() > 1)) {
+                std::fprintf(stderr, "Error: Multiple --max-dist/--evpK values in save mode are only supported by mode4/mode7.\n");
                 return 1;
             }
         }
