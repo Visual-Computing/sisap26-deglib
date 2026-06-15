@@ -1,0 +1,12 @@
+# Build/runtime junk and large mounted data — keep the build context small and
+# avoid copying dangling dev-dataset symlinks into the image (datasets are
+# mounted at runtime, not baked in).
+.git/
+**/__pycache__/
+*.pyc
+cpp/build/
+cpp/build-*/
+cpp/.idea/
+submission/data/**/*.h5
+submission/results/
+tira-submission-wip.md
