@@ -129,15 +129,14 @@ static ExplorationTimings run_search(
     for (int run = 0; run < num_runs; ++run) {
         std::fill(results.begin(), results.end(), std::vector<uint32_t>());
         std::fill(results_dists.begin(), results_dists.end(), std::vector<float>());
-        std::vector<double> chunk_search_times(num_chunks, 0.0);
 
+        double t_run_start = sisap_common::now_ms();
         deglib::concurrent::parallel_for(static_cast<size_t>(0), num_chunks, static_cast<uint32_t>(threads), 1,
             [&](size_t chunk_id, size_t) {
                 size_t start = chunk_id * chunk_size;
                 size_t end = std::min(start + chunk_size, count);
                 size_t num_items = end - start;
 
-                double t_search_start = sisap_common::now_ms();
                 for (size_t i = 0; i < num_items; ++i) {
                     size_t q_idx = start + i;
 
@@ -161,11 +160,10 @@ static ExplorationTimings run_search(
                         result_queue.pop();
                     }
                 }
-                chunk_search_times[chunk_id] = sisap_common::now_ms() - t_search_start;
             });
 
-        double sum_search_ms = std::accumulate(chunk_search_times.begin(), chunk_search_times.end(), 0.0) / static_cast<double>(threads);
-        run_times.push_back(sum_search_ms);
+        // Actual wall-clock for the whole parallel search (the scored query time).
+        run_times.push_back(sisap_common::now_ms() - t_run_start);
     }
 
     double avg_ms = std::accumulate(run_times.begin(), run_times.end(), 0.0) / run_times.size();
