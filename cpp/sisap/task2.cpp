@@ -270,8 +270,13 @@ int main(int argc, char* argv[]) {
                 std::fprintf(stderr, "Error: --output path must be specified when --no-recall is set.\n");
                 return 1;
             }
-            if (max_dist_list.size() > 1) {
-                std::fprintf(stderr, "Error: Multiple parameters for --max-dist are not allowed when --no-recall is set.\n");
+            // In save mode --output is a DIRECTORY: only mode5/mode7 write one file
+            // per (eps_search, max_dist) operating point. Other modes write a single
+            // file and would silently overwrite a sweep, so keep them single-point.
+            const bool multi_point_capable =
+                (mode == "l2-fp16-ip" || mode == "l2-build-fp16-ip-explore" || mode == "mode5");
+            if (!multi_point_capable && (max_dist_list.size() > 1 || eps_search_list.size() > 1)) {
+                std::fprintf(stderr, "Error: Multiple --max-dist/--eps-search values in save mode are only supported by mode5/mode7.\n");
                 return 1;
             }
         }
