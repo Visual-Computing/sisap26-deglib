@@ -135,7 +135,13 @@ static int run(const std::filesystem::path& data_path,
     double t_load = sisap_common::now_ms();
     size_t dims = static_cast<size_t>(train_info.num_cols);
     size_t count = static_cast<size_t>(train_info.num_rows);
-    std::vector<uint16_t> fp16_data = hdf5_reader::read_flat_uint16(h5path, train_info);
+    std::vector<uint16_t> fp16_data;
+    if (train_info.element_size == 4) {
+        std::vector<float> fp32_data = hdf5_reader::read_flat_fp32(h5path, train_info);
+        fp16_data = deglib::distances::floats_to_fp16(fp32_data);
+    } else {
+        fp16_data = hdf5_reader::read_flat_uint16(h5path, train_info);
+    }
 
     std::vector<std::vector<int32_t>> gt_data;
     if (run_recall) {

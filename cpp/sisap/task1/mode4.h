@@ -64,6 +64,7 @@ static ExplorationTimings run_exploration(const deglib::search::SearchGraph& gra
                                           const std::vector<std::vector<int32_t>>& gt_data,
                                           const std::string& output_path,
                                           double build_time_s) {
+    
     size_t count = graph.size();
     deglib::FloatSpace fp16_rerank_space(static_cast<uint32_t>(dims), deglib::Metric::FP16InnerProduct);
     std::vector<std::vector<uint32_t>> results(count);
@@ -193,6 +194,17 @@ static int run(const std::filesystem::path& data_path,
     std::vector<std::vector<std::byte>> train_vectors = hdf5_reader::read_matrix_bytes(h5path, train_info);
     size_t dims = static_cast<size_t>(train_info.num_cols);
     size_t count = static_cast<size_t>(train_info.num_rows);
+    if (train_info.element_size == 4) {
+        for (auto& vec : train_vectors) {
+            std::vector<std::byte> fp16_vec(dims * 2);
+            deglib::distances::floats_to_fp16(
+                reinterpret_cast<const float*>(vec.data()),
+                reinterpret_cast<uint16_t*>(fp16_vec.data()),
+                dims
+            );
+            vec = std::move(fp16_vec);
+        }
+    }
 
     std::vector<std::vector<int32_t>> gt_data;
     if (compute_recall) {
@@ -245,7 +257,7 @@ static int run(const std::filesystem::path& data_path,
 
         // Quantize all upfront once (highly optimized, parallel, zero raw copy)
         double t1 = sisap_common::now_ms();
-        auto quantized = deglib::quantization::quantize_batch(train_vectors, static_cast<uint32_t>(dims), non_zeros, threads);
+        auto quantized = deglib::quantization::quantize_batch_fp16(train_vectors, static_cast<uint32_t>(dims), non_zeros, threads);
         quantize_ms = sisap_common::now_ms() - t1;
 
         graph_ptr = std::make_unique<deglib::graph::SizeBoundedGraph>(static_cast<uint32_t>(count), k_graph, feature_space);

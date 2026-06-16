@@ -123,7 +123,6 @@ static int run(const std::filesystem::path& data_path,
 
     auto datasets = hdf5_reader::scan_datasets(h5path);
     auto& train_info = hdf5_reader::find_dataset(datasets, "train");
-
     double t_load_start = sisap_common::now_ms();
     size_t dims = static_cast<size_t>(train_info.num_cols);
     size_t count = static_cast<size_t>(train_info.num_rows);
@@ -193,6 +192,17 @@ static int run(const std::filesystem::path& data_path,
             double t_chunk_load = sisap_common::now_ms();
             std::vector<std::vector<std::byte>> chunk_vectors =
                 hdf5_reader::read_matrix_bytes(h5path, train_info, start_row, current_chunk_size);
+            if (train_info.element_size == 4) {
+                for (auto& vec : chunk_vectors) {
+                    std::vector<std::byte> fp16_vec(dims * 2);
+                    deglib::distances::floats_to_fp16(
+                        reinterpret_cast<const float*>(vec.data()),
+                        reinterpret_cast<uint16_t*>(fp16_vec.data()),
+                        dims
+                    );
+                    vec = std::move(fp16_vec);
+                }
+            }
             double chunk_load_ms = sisap_common::now_ms() - t_chunk_load;
             total_load_ms += chunk_load_ms;
 

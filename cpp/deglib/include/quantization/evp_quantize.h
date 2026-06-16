@@ -298,14 +298,14 @@ inline std::vector<std::byte> quantize_batch(const uint16_t* data, size_t count,
  * @return std::vector<std::byte> with count * 2 * dim/8 bytes
  * @throws std::invalid_argument if dim % 8 != 0 or non_zeros >= dim
  */
-inline std::vector<std::byte> quantize_batch(const std::vector<std::vector<std::byte>>& data, uint32_t dim,
-                                              uint32_t non_zeros, size_t numThreads = 0) {
+inline std::vector<std::byte> quantize_batch_fp16(const std::vector<std::vector<std::byte>>& data, uint32_t dim,
+                                                 uint32_t non_zeros, size_t numThreads = 0) {
     const size_t count = data.size();
     if (dim % 8 != 0) {
-        throw std::invalid_argument("quantize_batch: dim must be divisible by 8, got " + std::to_string(dim));
+        throw std::invalid_argument("quantize_batch_fp16: dim must be divisible by 8, got " + std::to_string(dim));
     }
     if (non_zeros >= dim) {
-        throw std::invalid_argument("quantize_batch: non_zeros must be < dim");
+        throw std::invalid_argument("quantize_batch_fp16: non_zeros must be < dim");
     }
 
     const size_t mask_bytes = dim / 8;
@@ -375,4 +375,5 @@ inline std::vector<std::byte> quantize_batch(const std::vector<std::vector<std::
 
     return result;
 }
+
 }  // namespace deglib::quantization

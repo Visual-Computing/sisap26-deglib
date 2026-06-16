@@ -59,28 +59,32 @@ static inline uint16_t float_to_fp16(float f) {
 #endif
 }
 
-static inline std::vector<uint16_t> floats_to_fp16(const std::vector<float>& v) {
-    std::vector<uint16_t> out(v.size());
+static inline void floats_to_fp16(const float* src, uint16_t* dst, size_t size) {
 #if defined(USE_AVX512) || defined(USE_AVX) || defined(USE_SSE)
     size_t i = 0;
-    for (; i + 4 <= v.size(); i += 4) {
-        __m128 f4 = _mm_loadu_ps(&v[i]);
+    for (; i + 4 <= size; i += 4) {
+        __m128 f4 = _mm_loadu_ps(&src[i]);
         __m128i h4 = _mm_cvtps_ph(f4, _MM_FROUND_TO_NEAREST_INT);
         alignas(16) uint16_t tmp[8];
         _mm_storeu_si128((__m128i*)tmp, h4);
-        out[i]   = tmp[0];
-        out[i+1] = tmp[1];
-        out[i+2] = tmp[2];
-        out[i+3] = tmp[3];
+        dst[i]   = tmp[0];
+        dst[i+1] = tmp[1];
+        dst[i+2] = tmp[2];
+        dst[i+3] = tmp[3];
     }
-    for (; i < v.size(); ++i) {
-        out[i] = float_to_fp16(v[i]);
+    for (; i < size; ++i) {
+        dst[i] = float_to_fp16(src[i]);
     }
 #else
-    for (size_t i = 0; i < v.size(); ++i) {
-        out[i] = float_to_fp16(v[i]);
+    for (size_t i = 0; i < size; ++i) {
+        dst[i] = float_to_fp16(src[i]);
     }
 #endif
+}
+
+static inline std::vector<uint16_t> floats_to_fp16(const std::vector<float>& v) {
+    std::vector<uint16_t> out(v.size());
+    floats_to_fp16(v.data(), out.data(), v.size());
     return out;
 }
 
