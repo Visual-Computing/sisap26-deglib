@@ -1,7 +1,7 @@
 # ============================================================
 # SISAP 2026 deglib submission — single container.
-# Stage 1 builds the deglib_sisap C++ binary (default -march=native; pass
-# --build-arg FORCE_AVX2=ON for an AVX2-only build). Stage 2 is a thin Python
+# Stage 1 builds the deglib_sisap C++ binary (AVX2-only by default; pass
+# --build-arg FORCE_AVX2=OFF for a -march=native build). Stage 2 is a thin Python
 # runtime that runs submission/search.py, which drives the binary. Both stages
 # share the same Ubuntu base so the binary's glibc/libstdc++ match the runtime.
 # Build from the repo root:  docker build -t sisap-deglib .
@@ -16,13 +16,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY cpp /build/cpp
 WORKDIR /build/cpp
 # ISA selection:
-#   FORCE_AVX2=OFF (default) -> -march=native: best ISA on the build host. On TIRA
-#     the image is built on the eval node itself, so native targets that exact CPU.
-#   FORCE_AVX2=ON -> AVX2-only build (drops -march=native so AVX-512 is not
-#     re-enabled), for building on an AVX-512 host that must match a non-AVX-512
-#     target (e.g. our build box vs the EPYC 7F72 eval node, which has no AVX-512).
-# Usage (AVX2-only):  docker build --build-arg FORCE_AVX2=ON -t sisap-deglib .
-ARG FORCE_AVX2=OFF
+#   FORCE_AVX2=ON (default) -> AVX2-only build (drops -march=native so AVX-512 is
+#     not re-enabled). Default because we build the submission image on an AVX-512
+#     host (our build box) but it must run on the EPYC 7F72 eval node, which has NO
+#     AVX-512 — a -march=native binary would crash there with SIGILL.
+#   FORCE_AVX2=OFF -> -march=native: best ISA on the build host (only safe when the
+#     build host and the run host share the same CPU).
+# Native build:  docker build --build-arg FORCE_AVX2=OFF -t sisap-deglib .
+ARG FORCE_AVX2=ON
 RUN if [ "$FORCE_AVX2" = "ON" ]; then \
         cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFORCE_AVX2=ON ; \
     else \
