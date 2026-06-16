@@ -52,6 +52,10 @@ RUN chmod +x /app/search.py
 
 # search.py finds the binary here by default.
 ENV DEGLIB_BIN=/usr/local/bin/deglib_sisap
+# Unbuffered stdout so search.py's progress lines interleave in order with the
+# C++ binary's output in the TIRA logs (otherwise Python's block buffering flushes
+# them after the subprocess, making one run look like two).
+ENV PYTHONUNBUFFERED=1
 
 # TIRA invokes the container as:
 #   python3 /app/search.py --input $inputDataset/*.h5 \
