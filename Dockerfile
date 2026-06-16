@@ -1,7 +1,7 @@
 # ============================================================
 # SISAP 2026 deglib submission — single container.
-# Stage 1 builds the deglib_sisap C++ binary (AVX2-only by default; pass
-# --build-arg FORCE_AVX2=OFF for a -march=native build). Stage 2 is a thin Python
+# Stage 1 builds the deglib_sisap C++ binary (default -march=native; pass
+# --build-arg FORCE_AVX2=ON for an AVX2-only build). Stage 2 is a thin Python
 # runtime that runs submission/search.py, which drives the binary. Both stages
 # share the same Ubuntu base so the binary's glibc/libstdc++ match the runtime.
 # Build from the repo root:  docker build -t sisap-deglib .
@@ -22,8 +22,8 @@ WORKDIR /build/cpp
 #     AVX-512 — a -march=native binary would crash there with SIGILL.
 #   FORCE_AVX2=OFF -> -march=native: best ISA on the build host (only safe when the
 #     build host and the run host share the same CPU).
-# Native build:  docker build --build-arg FORCE_AVX2=OFF -t sisap-deglib .
-ARG FORCE_AVX2=ON
+# Usage (AVX2-only):  docker build --build-arg FORCE_AVX2=ON -t sisap-deglib .
+ARG FORCE_AVX2=OFF
 RUN if [ "$FORCE_AVX2" = "ON" ]; then \
         cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFORCE_AVX2=ON ; \
     else \
