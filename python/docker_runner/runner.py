@@ -45,10 +45,12 @@ REPO_TYPE = "dataset"
 DATASET_FILES_TASK1: dict[str, str] = {
     "small": "benchmark-dev-wikipedia-bge-m3-small.h5",
     "large": "benchmark-dev-wikipedia-bge-m3.h5",
+    "spot": "task-1-spot-check/benchmark-dev-gooaq-small.h5",
 }
 
 DATASET_FILES_TASK2: dict[str, str] = {
     "default": "llama-dev/llama-dev.h5",
+    "spot": "task-2-spot-check/benchmark-dev-llama-small.h5",
 }
 
 # ---------------------------------------------------------------------------
@@ -205,6 +207,8 @@ class BaseRunner:
         filename = self.DATASET_FILES[size]
         search_filename = filename.split("/")[-1]
 
+        local_path = None
+
         # --- Step 1: look in the local HF cache (no network required) --------
         try:
             from huggingface_hub import scan_cache_dir
@@ -214,23 +218,76 @@ class BaseRunner:
                     for revision in repo.revisions:
                         for cached_file in revision.files:
                             if cached_file.file_name == search_filename:
-                                local_path = cached_file.file_path
+                                local_path = Path(cached_file.file_path)
                                 print(
                                     f"[{self.__class__.__name__}] Found dataset in local HF cache: {local_path}",
                                     flush=True,
                                 )
-                                return Path(local_path)
+                                break
+                    if local_path is not None:
+                        break
         except Exception as exc:
             print(f"[{self.__class__.__name__}] Cache scan failed ({exc}), will attempt download.", flush=True)
 
         # --- Step 2: download from HuggingFace Hub ----------------------------
-        print(f"[{self.__class__.__name__}] Downloading '{filename}' from HuggingFace Hub...", flush=True)
-        local_path = hf_hub_download(
-            repo_id=REPO_ID,
-            filename=filename,
-            repo_type=REPO_TYPE,
-        )
-        return Path(local_path)
+        if local_path is None:
+            print(f"[{self.__class__.__name__}] Downloading '{filename}' from HuggingFace Hub...", flush=True)
+            local_path = Path(hf_hub_download(
+                repo_id=REPO_ID,
+                filename=filename,
+                repo_type=REPO_TYPE,
+            ))
+
+        # --- Step 3: check and decompress if compressed/chunked ---------------
+        import h5py
+        needs_decomp = False
+        try:
+            with h5py.File(local_path, "r") as f:
+                def check_needs_decomp(group):
+                    for key in group.keys():
+                        item = group[key]
+                        if isinstance(item, h5py.Dataset):
+                            if item.chunks is not None or item.compression is not None:
+                                return True
+                        elif isinstance(item, h5py.Group):
+                            if check_needs_decomp(item):
+                                return True
+                    return False
+                needs_decomp = check_needs_decomp(f)
+        except Exception as e:
+            print(f"[{self.__class__.__name__}] Error checking dataset compression ({e}).", flush=True)
+
+        if needs_decomp:
+            uncompressed_path = local_path.with_name(local_path.stem + "-uncompressed.h5")
+            if not uncompressed_path.exists():
+                print(f"[{self.__class__.__name__}] Dataset {local_path.name} is compressed/chunked -> Decompressing to {uncompressed_path.name}...", flush=True)
+                try:
+                    with h5py.File(local_path, "r") as f:
+                        with h5py.File(uncompressed_path, "w") as out:
+                            def copy_dataset(name, item):
+                                if isinstance(item, h5py.Dataset):
+                                    dst = out.create_dataset(name, shape=item.shape, dtype=item.dtype, compression=None, chunks=None)
+                                    if item.ndim == 0:
+                                        dst[()] = item[()]
+                                    else:
+                                        block = 200000
+                                        for i in range(0, item.shape[0], block):
+                                            dst[i:i + block] = item[i:i + block]
+                                elif isinstance(item, h5py.Group):
+                                    out.create_group(name)
+                            f.visititems(copy_dataset)
+                    print(f"[{self.__class__.__name__}] Decompression complete: {uncompressed_path.name}", flush=True)
+                except Exception as e:
+                    print(f"[{self.__class__.__name__}] Decompression failed ({e}).", flush=True)
+                    if uncompressed_path.exists():
+                        try:
+                            uncompressed_path.unlink()
+                        except OSError:
+                            pass
+                    return local_path
+            return uncompressed_path
+
+        return local_path
 
     def get_data_dir(self, size: str) -> Path:
         """
@@ -294,9 +351,7 @@ class BaseRunner:
         We find a common ancestor of the local file and its target so relative symlinks 
         remain valid inside the container.
         """
-        data_dir = self.get_data_dir(size).absolute()
-        filename = self.DATASET_FILES[size]
-        local_path = (data_dir / filename.split("/")[-1]).absolute()
+        local_path = self.get_dataset_path(size).absolute()
         real_path = local_path.resolve()
 
         common_ancestor = None
