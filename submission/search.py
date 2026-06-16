@@ -101,6 +101,16 @@ TASK2_PROFILES = {
     ],
 }
 
+# Vector dimensionality -> profile-key fallback. The final leaderboard runs on an
+# UNDISCLOSED dataset (same model and similar size as the dev set, but a different
+# name and more queries — see the challenge page), so an exact dataset_name match is
+# NOT guaranteed at evaluation time. We then pick the tuned profile by vector
+# dimensionality, which uniquely identifies the data family (BGE-M3 = 1024-d,
+# Llama-3 = 128-d). The 384-d gooaq spot-check has no fallback (CI always supplies
+# its config name), so an unknown 384-d set still fails fast.
+TASK1_DIM_FALLBACK = {1024: "wikipedia"}    # BGE-M3 family; eval ~ 6.4M vectors
+TASK2_DIM_FALLBACK = {128: "llama-dev"}     # Llama-3 family
+
 
 def load_task_config(task_description_path):
     """Load task configuration from a config.json file."""
@@ -204,14 +214,31 @@ def read_op_file(path):
     return n, k, float(bt), float(et), ids, dists
 
 
-def _profile_or_die(profiles, dataset, task):
-    profile = profiles.get(dataset)
-    if profile is None:
-        sys.exit(
-            f"Error: no deglib parameter profile for {task} dataset {dataset!r}. "
-            f"Known: {sorted(profiles)}. Add a profile before submitting."
-        )
-    return profile
+def _train_dims(input_path, data_key):
+    """Database vector dimensionality, read straight from the HDF5 shape (metadata
+    only — instant even on a 14 GB compressed/chunked input)."""
+    with h5py.File(input_path, "r") as f:
+        return int(get_h5_item(f, data_key).shape[1])
+
+
+def _resolve_profile(profiles, dim_fallback, dataset, task, dims):
+    """Pick the parameter profile. Exact dataset_name match first (known dev and
+    spot-check sets); otherwise fall back by vector dimensionality so the undisclosed
+    evaluation dataset (same family, different name) still maps to the right tuned
+    profile. Fails fast if neither matches, rather than guessing bad parameters."""
+    if dataset in profiles:
+        print(f"[{task}] profile: exact match for dataset {dataset!r} (dim={dims})")
+        return profiles[dataset]
+    key = dim_fallback.get(dims)
+    if key is not None and key in profiles:
+        print(f"[{task}] profile: dataset {dataset!r} is unknown (likely the "
+              f"undisclosed eval set) — falling back by dim={dims} to the {key!r} profile")
+        return profiles[key]
+    sys.exit(
+        f"Error: no deglib profile for {task} dataset {dataset!r} (dim={dims}). "
+        f"Known names: {sorted(profiles)}; dim fallbacks: {sorted(dim_fallback)}. "
+        f"Add a profile before submitting."
+    )
 
 
 def _require_binary():
@@ -223,7 +250,8 @@ def _require_binary():
 def run_task1(input_path, cfg, output_dir):
     dataset = cfg["dataset_name"]
     k = int(cfg.get("k", 15))
-    configs = _profile_or_die(TASK1_PROFILES, dataset, "task1")
+    dims = _train_dims(input_path, cfg.get("data", "train"))
+    configs = _resolve_profile(TASK1_PROFILES, TASK1_DIM_FALLBACK, dataset, "task1", dims)
     _require_binary()
     print(f"[task1] dataset={dataset}: {len(configs)} config(s) / build(s)")
 
@@ -294,7 +322,8 @@ def run_task2(input_path, cfg, output_dir):
     dataset = cfg["dataset_name"]
     k = int(cfg.get("k", 30))
     queries_key = cfg.get("queries", "test/queries")
-    configs = _profile_or_die(TASK2_PROFILES, dataset, "task2")
+    dims = _train_dims(input_path, cfg.get("data", "train"))
+    configs = _resolve_profile(TASK2_PROFILES, TASK2_DIM_FALLBACK, dataset, "task2", dims)
     _require_binary()
     print(f"[task2] dataset={dataset}: {len(configs)} config(s) / build(s)")
 
