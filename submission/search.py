@@ -90,9 +90,9 @@ TASK2_PROFILES = {
     # 128-dim Llama-3 attention (unnormalized inner product) — submission candidates.
     "llama-dev": [
         dict(mode="mode5", k_graph=32, k_ext=64, eps_ext=0.001, build_threads=1, use_flas=True,
-             num_runs=10, max_dist=[5000, 6000, 7000, 8000], eps_search=[0.18]),
+             num_runs=10, max_dist=[6000, 6500, 7000, 7500, 8000, 9000], eps_search=[0.18]),
         dict(mode="mode7", k_graph=32, k_ext=64, eps_ext=0.001, build_threads=1, use_flas=True,
-             num_runs=10, max_dist=[5000, 5500, 6000, 6200, 6300, 6500, 7000], eps_search=[0.007]),
+             num_runs=10, max_dist=[5500, 6000, 6250, 6500, 6750, 7000, 8000], eps_search=[0.007]),
     ],
     # spot-check (14k vectors); smoke test only
     "llama-small": [
