@@ -78,7 +78,7 @@ TASK1_PROFILES = {
     ],
     # 384-dim gooaq spot-check (different family; smoke test only, non_zeros<dim)
     "gooaq-small": [
-        dict(mode="mode4", non_zeros=300, k_graph=24, k_ext=24, eps_ext=0.001, prune_worst=8, evpK=50, max_dist=[200, 400, 800]),
+        dict(mode="mode4", non_zeros=200, k_graph=16, k_ext=16, eps_ext=0.001, prune_worst=8, evpK=50, max_dist=[100, 150, 200]),
     ],
 }
 

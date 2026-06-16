@@ -55,7 +55,7 @@ def _fmt(val: float | None) -> str:
 def _fmt_recall(val: float | None) -> str:
     if val is None:
         return "—"
-    return f"{val:.2f}%"
+    return f"{val * 100.0:.2f}%"
 
 
 def _strip_ansi(text: str) -> str:

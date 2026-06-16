@@ -36,13 +36,13 @@ class ModeConfig:
 
 
 MODES: list[ModeConfig] = [
-    ModeConfig(name="mode1", mode="fp16", label="FP16 Build+Explore", settings="M=24, MaxDist=100", max_dist=100),
-    # ModeConfig(name="mode2", mode="evp-linear", label="EVP linear search", settings="—"),
-    ModeConfig(name="mode3", mode="evp", label="EVP Build+Explore", settings="M=24, MaxDist=200"),
-    ModeConfig(name="mode4", mode="evp-rerank", label="EVP Build+Explore+Rerank", settings="M=24, MaxDist=200, evpK=50", evp_k=50),
-    ModeConfig(name="mode5", mode="evp-build-fp16-external-search", label="EVP build+FP16 Explore", settings="M=24, MaxDist=200"),
-    ModeConfig(name="mode6", mode="evp-asymmetric", label="EVP build+Asym Explore", settings="M=24, MaxDist=200"),
-    ModeConfig(name="mode7", mode="evp-asymmetric-rerank", label="EVP build+Asym+Rerank", settings="M=24, MaxDist=200, evpK=50", evp_k=50),
+    ModeConfig(name="mode1", mode="fp16", label="FP16 Build+Explore", settings="M=16, MaxDist=100", max_dist=100),
+    ModeConfig(name="mode2", mode="evp-linear", label="EVP linear search", settings="—"),
+    ModeConfig(name="mode3", mode="evp", label="EVP Build+Explore", settings="M=16, MaxDist=200"),
+    ModeConfig(name="mode4", mode="evp-rerank", label="EVP Build+Explore+Rerank", settings="M=16, MaxDist=100, evpK=50", max_dist=100, evp_k=50),
+    ModeConfig(name="mode5", mode="evp-build-fp16-external-search", label="EVP build+FP16 Explore", settings="M=16, MaxDist=200"),
+    ModeConfig(name="mode6", mode="evp-asymmetric", label="EVP build+Asym Explore", settings="M=16, MaxDist=200"),
+    ModeConfig(name="mode7", mode="evp-asymmetric-rerank", label="EVP build+Asym+Rerank", settings="M=16, MaxDist=200, evpK=50", evp_k=50),
 ]
 
 
@@ -55,7 +55,7 @@ def _fmt(val: float | None) -> str:
 def _fmt_recall(val: float | None) -> str:
     if val is None:
         return "—"
-    return f"{val:.2f}%"
+    return f"{val * 100.0:.2f}%"
 
 
 def _strip_ansi(text: str) -> str:
@@ -73,9 +73,9 @@ def run_mode(runner: Task1Runner, cfg: ModeConfig, num_threads: int) -> Task1Res
         size="spot",
         max_dist=cfg.max_dist,
         threads=num_threads,
-        non_zeros=300,
-        k_graph=24,
-        k_ext=24,
+        non_zeros=200,
+        k_graph=16,
+        k_ext=16,
         prune_worst=8,
     )
     if cfg.evp_k is not None:
