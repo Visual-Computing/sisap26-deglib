@@ -123,4 +123,30 @@ Once compiled, the executable `deglib_sisap` can be run from the build output di
 * `--output <path>`: Path to write retrieved neighbor indices to a binary `.ivecs` file.
 * `--flas` (Task 2 only): Enables FLAS pre-sorting of training vectors before graph building.
 
+## Graph modes
 
+The `deglib_sisap` binary implements seven graph modes per task (`mode1`…`mode7`). All modes share the same save-mode contract (writing one result file per operating point holding neighbor IDs and distances), so they are drop-in alternatives.
+
+### Task 1 — EVP variants
+
+| Mode        | Name                           | Description                                  |
+|-------------|--------------------------------|----------------------------------------------|
+| mode1       | fp16                           | FP16 build + FP16 explore                    |
+| mode2       | evp-linear                     | EVP quantization + brute-force linear search |
+| mode3       | evp                            | EVP build + EVP explore (no rerank)          |
+| **mode4** ⭐ | evp-rerank                     | EVP build + EVP explore + FP16 rerank        |
+| mode5       | evp-build-fp16-external-search | EVP build + FP16 external graph search       |
+| mode6       | evp-asymmetric                 | EVP build + asymmetric FP16-vs-EVP search    |
+| mode7 ⭐     | evp-asymmetric-rerank          | EVP build + asymmetric search + FP16 rerank  |
+
+### Task 2 — L2-lift variants
+
+| Mode        | Name                    | Description                             |
+|-------------|-------------------------|-----------------------------------------|
+| mode1       | baseline                | FP32 build + FP32 inner-product explore |
+| mode2       | fp16-build-fp16-explore | FP16 build + FP16 IP explore            |
+| mode3       | baseline-fp16           | FP32 build + FP16 IP explore            |
+| mode4       | l2-converted            | FP32 L2(d+1) build + FP32 L2 explore    |
+| **mode5** ⭐ | l2-fp16-ip              | FP32 L2(d+1) build + FP16 IP explore    |
+| mode6       | l2-fp16-l2              | FP32 L2(d+1) build + FP16 L2 explore    |
+| mode7 ⭐     | l2-fp16-d2              | FP32 L2(d+2) build + FP16 L2 explore    |
