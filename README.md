@@ -71,33 +71,38 @@ Submissions are handled through TIRA ([tira.io/task-overview/sisap-2026](https:/
 
 ### Step 2 — Verify locally
 
-To test the containerized submission pipeline locally on your machine, ensure you have the virtual environment activated (or use uv/pip to install the `tira` client):
+To test the containerized submission pipeline locally on your machine, sync the workspace dependencies:
 
 ```bash
-# Install/update the tira client
-uv pip install --upgrade tira
+# Install/update workspace dependencies
+uv sync
 
-# Run a dry run against one of the spot-check datasets:
-.venv/bin/tira-cli code-submission \
+# Run a dry run against the task-1 spot-check datasets:
+uv run tira-cli code-submission \
     --path . \
     --command 'python3 /app/search.py --input $inputDataset/*.h5 --task-description $inputDataset/config.json --output $outputDir' \
     --task sisap-2026 \
     --dataset task-1-spot-check-20260602-training \
     --dry-run
-```
-*(On Windows, use `.\.venv\Scripts\tira-cli` instead of `.venv/bin/tira-cli`)*
 
-Use `task-2-spot-check-20260602-training` if your approach only targets Task 2.
+# Run a dry run against the task-2 spot-check datasets:
+uv run tira-cli code-submission \
+    --path . \
+    --command 'python3 /app/search.py --input $inputDataset/*.h5 --task-description $inputDataset/config.json --output $outputDir' \
+    --task sisap-2026 \
+    --dataset task-2-spot-check-20260602-training \
+    --dry-run
+```
 
 ### Step 3 — Authenticate and submit
 
 Retrieve your authentication token from the TIRA task page (**Submit** → **Code Submissions** → **New Submission** → **I want to submit from my local machine**), then:
 
 ```bash
-.venv/bin/tira-cli login --token AUTH-TOKEN
-.venv/bin/tira-cli verify-installation --task sisap-2026 --team YOUR-TEAM
+uv run tira-cli login --token AUTH-TOKEN
+uv run tira-cli verify-installation --task sisap-2026 --team deglib
 
-.venv/bin/tira-cli code-submission \
+uv run tira-cli code-submission \
     --path . \
     --command 'python3 /app/search.py --input $inputDataset/*.h5 --task-description $inputDataset/config.json --output $outputDir' \
     --task sisap-2026 \
@@ -120,18 +125,17 @@ Retrieve your authentication token from the TIRA task page (**Submit** → **Cod
 # Build the submission image
 docker build -t sisap-deglib .
 
-# Run one task the way TIRA does (dataset dir holds the .h5 + config.json)
+# Run one task the way TIRA does (your-dataset-dir holds the .h5 and config-dir the config.json)
 mkdir -p results
 docker run --rm --cpus=8 --memory=24g \
-    -v "$PWD/your-dataset-dir:/app/data/ds:ro" \
+    -v "$PWD/your-dataset-dir:/app/dataset:ro" \
     -v "$PWD/results:/app/results:rw" \
     sisap-deglib \
-    python3 /app/search.py --input '/app/data/ds/*.h5' \
-        --task-description /app/data/ds/config.json --output /app/results
+    python3 /app/search.py --input '/app/dataset/*.h5' \
+        --task-description /app/data/config-dir/config.json --output /app/results
 
-# Score the results against the dataset ground truth (run from submission/,
-# like CI does, so eval.py can import the harness modules)
-cd submission && PYTHONPATH=. python3 eval.py --results ../results res.csv
+# Score the results against the dataset ground truth
+uv --directory submission run eval.py --results ../results ../res.csv
 ```
 
 ### Building just the C++ binary

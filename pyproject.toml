@@ -1,0 +1,14 @@
+[project]
+name = "sisap26-deglib-root"
+version = "0.1.0"
+description = "SISAP 2026 deglib submission and evaluation workspace"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "h5py>=3.16.0",
+    "matplotlib>=3.10.9",
+    "numpy",
+    "pandas",
+    "scipy>=1.17.1",
+    "tira>=0.0.202",
+]
