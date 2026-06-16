@@ -3,7 +3,7 @@
 /**
  * @file mode2.h
  * @brief Benchmark Mode 2: EVP Linear Search (evp-linear-search)
- * 
+ *
  * Behavior:
  * 1. Quantizes training features to EVP bits representation.
  * 2. Runs an exact brute-force linear search over all quantized vector pairs.
@@ -11,24 +11,26 @@
  * 4. Acts as an exact similarity search baseline (no graph built).
  */
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include <functional>
-#include <limits>
-#include <random>
-#include <algorithm>
-#include <thread>
-#include <vector>
-#include <numeric>
 #include <filesystem>
 #include <fstream>
+#include <functional>
+#include <limits>
+#include <numeric>
+#include <random>
+#include <thread>
+#include <vector>
 
 #if defined(USE_SSE) || defined(USE_AVX) || defined(USE_AVX512)
-#include <immintrin.h>
+    #include <immintrin.h>
 #endif
 
+#include "../hdf5_reader.h"
+#include "../sisap_common.h"
 #include "builder.h"
 #include "concurrent.h"
 #include "distances.h"
@@ -36,23 +38,19 @@
 #include "quantization/evp_quantize.h"
 #include "repository.h"
 
-#include "../sisap_common.h"
-#include "../hdf5_reader.h"
-
 namespace task1::mode2 {
 
-static int run(
-    const std::filesystem::path& data_path,
-    uint32_t threads,
-    uint32_t non_zeros,
-    uint8_t k_graph, uint8_t k_ext,
-    float eps_ext,
-    uint32_t k_top,
-    const std::vector<uint32_t>& max_dist_list,
-    bool compute_recall,
-    float goal_recall,
-    const std::string& output_path)
-{
+static int run(const std::filesystem::path& data_path,
+               uint32_t threads,
+               uint32_t non_zeros,
+               uint8_t k_graph,
+               uint8_t k_ext,
+               float eps_ext,
+               uint32_t k_top,
+               const std::vector<uint32_t>& max_dist_list,
+               bool compute_recall,
+               float goal_recall,
+               const std::string& output_path) {
     (void)k_graph;
     (void)k_ext;
     (void)eps_ext;
@@ -71,9 +69,7 @@ static int run(
     if (compute_recall) {
         gt_data = sisap_common::load_ground_truth(h5path, datasets, k_top);
         if (count != gt_data.size()) {
-            std::fprintf(stderr,
-                "Error: train and allknn must contain the same number of entries (%zu vs %zu)\n",
-                count, gt_data.size());
+            std::fprintf(stderr, "Error: train and allknn must contain the same number of entries (%zu vs %zu)\n", count, gt_data.size());
             return 1;
         }
     }
@@ -86,8 +82,7 @@ static int run(
     // --------------------------------------------------------------------------
     double t1 = sisap_common::now_ms();
 
-    auto quantized = deglib::quantization::quantize_batch(
-        train_vectors, static_cast<uint32_t>(dims), non_zeros, threads);
+    auto quantized = deglib::quantization::quantize_batch(train_vectors, static_cast<uint32_t>(dims), non_zeros, threads);
 
     double quantize_ms = sisap_common::now_ms() - t1;
 
@@ -102,62 +97,57 @@ static int run(
     double best_search_ms = 0.0;
 
     for (uint32_t max_dist_val : max_dist_list) {
-        double t_start = sisap_common::now_ms();
-
         std::vector<std::vector<uint32_t>> results(count, std::vector<uint32_t>(k_top, std::numeric_limits<uint32_t>::max()));
         std::vector<std::vector<float>> results_dists(count, std::vector<float>(k_top, std::numeric_limits<float>::max()));
         const size_t bytes_per_evp = dims / 4;
         const uint32_t dims_u32 = static_cast<uint32_t>(dims);
 
-        const size_t chunk_size = 8192;
+        // Aim for ~8 chunks per thread so even small query sets spread across all threads
+        const size_t chunk_size =
+            std::clamp((count + static_cast<size_t>(threads) * 8 - 1) / (static_cast<size_t>(threads) * 8), size_t{1}, size_t{8196});
         const size_t num_chunks = (count + chunk_size - 1) / chunk_size;
 
-        std::vector<double> chunk_search_times(num_chunks, 0.0);
+        double t_start = sisap_common::now_ms();
+        deglib::concurrent::parallel_for(static_cast<size_t>(0), num_chunks, threads, 1, [&](size_t chunk_id, size_t) {
+            size_t start = chunk_id * chunk_size;
+            size_t end = std::min(start + chunk_size, count);
+            size_t num_items = end - start;
 
-        deglib::concurrent::parallel_for(static_cast<size_t>(0), num_chunks, threads, 1,
-            [&](size_t chunk_id, size_t) {
-                size_t start = chunk_id * chunk_size;
-                size_t end = std::min(start + chunk_size, count);
-                size_t num_items = end - start;
+            for (size_t i = 0; i < num_items; ++i) {
+                size_t label = start + i;
+                const std::byte* query_ptr = quantized.data() + label * bytes_per_evp;
 
-                double t_search_start = sisap_common::now_ms();
-                for (size_t i = 0; i < num_items; ++i) {
-                    size_t label = start + i;
-                    const std::byte* query_ptr = quantized.data() + label * bytes_per_evp;
+                std::vector<std::pair<float, uint32_t>> top;
+                top.reserve(k_top + 1);
 
-                    std::vector<std::pair<float, uint32_t>> top;
-                    top.reserve(k_top + 1);
-
-                    for (size_t j = 0; j < count; ++j) {
-                        if (label == j) {
-                            continue;
-                        }
-
-                        const std::byte* cand_ptr = quantized.data() + j * bytes_per_evp;
-                        float dist = deglib::distances::EvpBitsSimilarity::compare(query_ptr, cand_ptr, &dims_u32);
-
-                        if (top.size() < k_top) {
-                            top.push_back({dist, static_cast<uint32_t>(j)});
-                            std::push_heap(top.begin(), top.end());
-                        } else if (dist < top.front().first) {
-                            std::pop_heap(top.begin(), top.end());
-                            top.back() = {dist, static_cast<uint32_t>(j)};
-                            std::push_heap(top.begin(), top.end());
-                        }
+                for (size_t j = 0; j < count; ++j) {
+                    if (label == j) {
+                        continue;
                     }
 
-                    std::sort_heap(top.begin(), top.end());
+                    const std::byte* cand_ptr = quantized.data() + j * bytes_per_evp;
+                    float dist = deglib::distances::EvpBitsSimilarity::compare(query_ptr, cand_ptr, &dims_u32);
 
-                    for (uint32_t k = 0; k < k_top && k < top.size(); ++k) {
-                        results[label][k] = top[k].second;
-                        results_dists[label][k] = top[k].first;
+                    if (top.size() < k_top) {
+                        top.push_back({dist, static_cast<uint32_t>(j)});
+                        std::push_heap(top.begin(), top.end());
+                    } else if (dist < top.front().first) {
+                        std::pop_heap(top.begin(), top.end());
+                        top.back() = {dist, static_cast<uint32_t>(j)};
+                        std::push_heap(top.begin(), top.end());
                     }
                 }
-                chunk_search_times[chunk_id] = sisap_common::now_ms() - t_search_start;
-            });
 
-        double total_ms = sisap_common::now_ms() - t_start;
-        double search_ms = std::accumulate(chunk_search_times.begin(), chunk_search_times.end(), 0.0) / threads;
+                std::sort_heap(top.begin(), top.end());
+
+                for (uint32_t k = 0; k < k_top && k < top.size(); ++k) {
+                    results[label][k] = top[k].second;
+                    results_dists[label][k] = top[k].first;
+                }
+            }
+        });
+
+        double search_ms = sisap_common::now_ms() - t_start;
         if (!compute_recall && !output_path.empty()) {
             std::string point_output = output_path + "/op_md" + std::to_string(max_dist_val) + ".bin";
             sisap_common::write_knns_dists(point_output, results, results_dists, build_time_s, search_ms / 1000.0);
@@ -171,8 +161,7 @@ static int run(
             recall = sisap_common::compute_recall(gt_data, results, k_top);
         }
 
-        std::printf("  max_dist=%u has recall %.2f %% and time %.1f s\n",
-                    max_dist_val, recall * 100.0f, search_ms / 1000.0);
+        std::printf("  max_dist=%u has recall %.2f %% and time %.1f s\n", max_dist_val, recall * 100.0f, search_ms / 1000.0);
 
         bool is_better = false;
         if (recall >= goal_recall) {
@@ -191,16 +180,31 @@ static int run(
     std::printf("\n");
     double total_time_ms = load_ms + quantize_ms + best_search_ms;
 
-    sisap_common::print_summary(
-        "EVP Linear Search", 2,
-        load_ms, quantize_ms, 0.0, 0.0, 0.0,
-        best_search_ms, 0.0, total_time_ms,
-        compute_recall, k_top, best_recall,
-        threads, best_max_dist, 0,
-        0, 0, 0.0f, non_zeros, count, dims, 0
-    );
+    sisap_common::print_summary("EVP Linear Search",
+                                2,
+                                load_ms,
+                                quantize_ms,
+                                0.0,
+                                0.0,
+                                0.0,
+                                best_search_ms,
+                                0.0,
+                                total_time_ms,
+                                compute_recall,
+                                k_top,
+                                best_recall,
+                                threads,
+                                best_max_dist,
+                                0,
+                                0,
+                                0,
+                                0.0f,
+                                non_zeros,
+                                count,
+                                dims,
+                                0);
 
     return 0;
 }
 
-} // namespace task1::mode2
+}  // namespace task1::mode2

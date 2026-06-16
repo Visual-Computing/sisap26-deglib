@@ -18,34 +18,34 @@
  * 7. Tracks build time, conversion time, and search time separately.
  */
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <functional>
 #include <limits>
+#include <numeric>
 #include <random>
-#include <algorithm>
 #include <thread>
 #include <vector>
-#include <numeric>
-#include <filesystem>
+
 
 #if defined(USE_SSE) || defined(USE_AVX) || defined(USE_AVX512)
-#include <immintrin.h>
+    #include <immintrin.h>
 #endif
 
+#include "../hdf5_reader.h"
+#include "../sisap_common.h"
 #include "builder.h"
 #include "concurrent.h"
+#include "distance/fp16.h"
 #include "distances.h"
-#include "graph/sizebounded_graph.h"
 #include "graph/readonly_graph.h"
+#include "graph/sizebounded_graph.h"
 #include "repository.h"
 
-#include "../sisap_common.h"
-#include "../hdf5_reader.h"
-
-#include "distance/fp16.h"
 
 namespace task2::mode_fp16 {
 
@@ -56,23 +56,21 @@ struct ExplorationTimings {
 
 using deglib::distances::floats_to_fp16;
 
-static ExplorationTimings run_search(
-    const deglib::graph::ReadOnlyGraph& graph,
-    const std::vector<std::vector<uint16_t>>& queries,
-    uint32_t k_top,
-    float eps_search,
-    uint32_t max_dist,
-    uint8_t threads,
-    bool compute_recall,
-    int num_runs = 1,
-    const std::vector<std::vector<int32_t>>& gt_data = {},
-    const std::string& output_path = "",
-    double build_time_s = 0.0)
-{
+static ExplorationTimings run_search(const deglib::graph::ReadOnlyGraph& graph,
+                                     const std::vector<std::vector<uint16_t>>& queries,
+                                     uint32_t k_top,
+                                     float eps_search,
+                                     uint32_t max_dist,
+                                     uint8_t threads,
+                                     bool compute_recall,
+                                     int num_runs = 1,
+                                     const std::vector<std::vector<int32_t>>& gt_data = {},
+                                     const std::string& output_path = "",
+                                     double build_time_s = 0.0) {
     size_t count = queries.size();
     // Aim for ~8 chunks per thread so even small query sets spread across all threads
-    const size_t chunk_size = std::max<size_t>(
-        1, (count + static_cast<size_t>(threads) * 8 - 1) / (static_cast<size_t>(threads) * 8));
+    const size_t chunk_size =
+        std::clamp((count + static_cast<size_t>(threads) * 8 - 1) / (static_cast<size_t>(threads) * 8), size_t{1}, size_t{8196});
     const size_t num_chunks = (count + chunk_size - 1) / chunk_size;
     std::vector<std::vector<uint32_t>> results(count);
     std::vector<std::vector<float>> results_dists(count);
@@ -83,8 +81,8 @@ static ExplorationTimings run_search(
         std::fill(results_dists.begin(), results_dists.end(), std::vector<float>());
 
         double t_run_start = sisap_common::now_ms();
-        deglib::concurrent::parallel_for(static_cast<size_t>(0), num_chunks, static_cast<uint32_t>(threads), 1,
-            [&](size_t chunk_id, size_t) {
+        deglib::concurrent::parallel_for(
+            static_cast<size_t>(0), num_chunks, static_cast<uint32_t>(threads), 1, [&](size_t chunk_id, size_t) {
                 size_t start = chunk_id * chunk_size;
                 size_t end = std::min(start + chunk_size, count);
                 size_t num_items = end - start;
@@ -93,13 +91,7 @@ static ExplorationTimings run_search(
                     size_t q_idx = start + i;
 
                     const std::byte* query_bytes = reinterpret_cast<const std::byte*>(queries[q_idx].data());
-                    deglib::search::ResultSet result_queue = graph.search(
-                        {0},
-                        query_bytes,
-                        eps_search,
-                        k_top,
-                        nullptr,
-                        max_dist);
+                    deglib::search::ResultSet result_queue = graph.search({0}, query_bytes, eps_search, k_top, nullptr, max_dist);
 
                     auto& res = results[q_idx];
                     auto& rdist = results_dists[q_idx];
@@ -132,30 +124,29 @@ static ExplorationTimings run_search(
         sisap_common::write_knns_dists(output_path, results, results_dists, build_time_s, avg_ms / 1000.0);
     }
 
-    return { avg_ms, recall };
+    return {avg_ms, recall};
 }
 
-static int run(
-    const std::filesystem::path& data_path,
-    uint32_t threads,
-    uint32_t build_threads,
-    bool use_flas,
-    FlasMetric flas_metric,
-    float flas_radius_decay,
-    uint8_t k_graph, uint8_t k_ext,
-    float eps_ext,
-    deglib::builder::OptimizationTarget opt_target,
-    uint64_t opt_iterations,
-    uint32_t prune_worst,
-    uint32_t k_top,
-    int num_runs,
-    const std::vector<uint32_t>& max_dist_list,
-    const std::vector<float>& eps_search_list,
-    bool compute_recall,
-    float goal_recall,
-    const std::string& output_path = "",
-    const std::string& graph_path = "")
-{
+static int run(const std::filesystem::path& data_path,
+               uint32_t threads,
+               uint32_t build_threads,
+               bool use_flas,
+               FlasMetric flas_metric,
+               float flas_radius_decay,
+               uint8_t k_graph,
+               uint8_t k_ext,
+               float eps_ext,
+               deglib::builder::OptimizationTarget opt_target,
+               uint64_t opt_iterations,
+               uint32_t prune_worst,
+               uint32_t k_top,
+               int num_runs,
+               const std::vector<uint32_t>& max_dist_list,
+               const std::vector<float>& eps_search_list,
+               bool compute_recall,
+               float goal_recall,
+               const std::string& output_path = "",
+               const std::string& graph_path = "") {
     double opt_ms = 0.0;
     const std::string h5path = data_path.string();
     std::printf("\n");
@@ -179,8 +170,8 @@ static int run(
     size_t dims = static_cast<size_t>(train_info.num_cols);
     size_t count = static_cast<size_t>(train_info.num_rows);
 
-    std::printf("Dataset: train = %zu vectors, queries = %zu (%s), dims = %zu\n",
-                count, query_count, query_name ? query_name : "none", dims);
+    std::printf(
+        "Dataset: train = %zu vectors, queries = %zu (%s), dims = %zu\n", count, query_count, query_name ? query_name : "none", dims);
 
     // --------------------------------------------------------------------------
     // Load ground truth
@@ -193,8 +184,10 @@ static int run(
 
             if (gt_matrix.size() != query_count) {
                 std::fprintf(stderr,
-                    "Error: queries (%zu) and %s (%zu) must have the same number of rows\n",
-                    query_count, knn_name, gt_matrix.size());
+                             "Error: queries (%zu) and %s (%zu) must have the same number of rows\n",
+                             query_count,
+                             knn_name,
+                             gt_matrix.size());
                 return 1;
             }
 
@@ -255,32 +248,39 @@ static int run(
             graph_load_ms = sisap_common::now_ms() - t_load_graph_start;
             std::printf("Graph loaded successfully in %.2f ms (%u vertices)\n", graph_load_ms, graph_size);
         } else {
-            std::fprintf(stderr, "Warning: Saved graph properties do not match dataset: metric=%d vs %d, dim=%u vs %zu, size=%u vs %zu. Rebuilding.\n",
-                         (int)fs.metric(), (int)feature_space.metric(), (unsigned)fs.dim(), dims, graph_size, count);
+            std::fprintf(
+                stderr,
+                "Warning: Saved graph properties do not match dataset: metric=%d vs %d, dim=%u vs %zu, size=%u vs %zu. Rebuilding.\n",
+                (int)fs.metric(),
+                (int)feature_space.metric(),
+                (unsigned)fs.dim(),
+                dims,
+                graph_size,
+                count);
         }
     }
 
     if (!loaded) {
         if (use_flas)
-            std::printf("Building graph (FLAS order): k_graph=%u, k_ext=%u, eps_ext=%.3f, threads=%u, opt_target=%s\n", k_graph, k_ext, eps_ext, build_threads, sisap_common::opt_target_str(opt_target));
+            std::printf("Building graph (FLAS order): k_graph=%u, k_ext=%u, eps_ext=%.3f, threads=%u, opt_target=%s\n",
+                        k_graph,
+                        k_ext,
+                        eps_ext,
+                        build_threads,
+                        sisap_common::opt_target_str(opt_target));
         else
-            std::printf("Building graph: k_graph=%u, k_ext=%u, eps_ext=%.3f, threads=%u, opt_target=%s\n", k_graph, k_ext, eps_ext, build_threads, sisap_common::opt_target_str(opt_target));
+            std::printf("Building graph: k_graph=%u, k_ext=%u, eps_ext=%.3f, threads=%u, opt_target=%s\n",
+                        k_graph,
+                        k_ext,
+                        eps_ext,
+                        build_threads,
+                        sisap_common::opt_target_str(opt_target));
 
         graph_ptr = std::make_unique<deglib::graph::SizeBoundedGraph>(static_cast<uint32_t>(count), k_graph, feature_space);
         deglib::graph::SizeBoundedGraph& graph = *graph_ptr;
 
         std::mt19937 rnd(42);
-        deglib::builder::EvenRegularGraphBuilder builder(
-            graph, rnd,
-            opt_target,
-            k_ext, eps_ext,
-            0, 0.0f,
-            5,
-            0, 0,
-            true,
-            false,
-            false
-        );
+        deglib::builder::EvenRegularGraphBuilder builder(graph, rnd, opt_target, k_ext, eps_ext, 0, 0.0f, 5, 0, 0, true, false, false);
         builder.setThreadCount(static_cast<uint32_t>(build_threads));
         builder.setBatchSize(64, 128);
 
@@ -306,8 +306,10 @@ static int run(
 
             double elapsed_s = (sisap_common::now_ms() - t_build_start) / 1000.0;
             std::printf("  Chunk [%6zuk - %6zuk): Build = %.2fs | Elapsed = %.2fs\n",
-                        start_row / 1000, (start_row + current_chunk_size) / 1000,
-                        chunk_build_ms / 1000.0, elapsed_s);
+                        start_row / 1000,
+                        (start_row + current_chunk_size) / 1000,
+                        chunk_build_ms / 1000.0,
+                        elapsed_s);
         }
 
         if (opt_iterations > 0) {
@@ -345,7 +347,7 @@ static int run(
     std::printf("Building ReadOnlyGraph with FP16 features...\n");
     deglib::FloatSpace fp16_space(static_cast<uint32_t>(dims), deglib::Metric::FP16InnerProduct);
     deglib::graph::ReadOnlyGraph fp16_graph(fp16_space, graph, database_fp16.data());
-    
+
     // Free the original FP32 graph and temporary FP16 buffer
     graph_ptr.reset();
     database_fp32.clear();
@@ -397,14 +399,23 @@ static int run(
         for (uint32_t max_dist_val : max_dist_list) {
             std::string point_output;
             if (!compute_recall && !output_path.empty()) {
-                point_output = output_path + "/op_eps" + std::to_string((int)std::lround(eps_search * 1000.0f)) +
-                               "_md" + std::to_string(max_dist_val) + ".bin";
+                point_output = output_path + "/op_eps" + std::to_string((int)std::lround(eps_search * 1000.0f)) + "_md" +
+                               std::to_string(max_dist_val) + ".bin";
             }
-            auto timings = run_search(fp16_graph, queries, k_top, eps_search, max_dist_val, static_cast<uint8_t>(threads),
-                                           compute_recall, num_runs, gt_data, point_output, build_time_s);
+            auto timings = run_search(fp16_graph,
+                                      queries,
+                                      k_top,
+                                      eps_search,
+                                      max_dist_val,
+                                      static_cast<uint8_t>(threads),
+                                      compute_recall,
+                                      num_runs,
+                                      gt_data,
+                                      point_output,
+                                      build_time_s);
 
-            std::printf("    max_dist=%u has recall %.2f %% and search time %.1f ms\n",
-                        max_dist_val, timings.recall * 100.0f, timings.search_ms);
+            std::printf(
+                "    max_dist=%u has recall %.2f %% and search time %.1f ms\n", max_dist_val, timings.recall * 100.0f, timings.search_ms);
 
             bool is_better = false;
             if (timings.recall >= goal_recall) {
@@ -425,17 +436,34 @@ static int run(
     std::printf("\n");
     double total_time_ms = load_ms + build_ms + opt_ms + convert_ms + best_timings.search_ms;
 
-    sisap_common::print_summary(
-        (use_flas ? "FP32 Build, FP16 Search (FLAS)" : "FP32 Build, FP16 Search"), 3,
-        load_ms, 0.0, build_ms, convert_ms, prune_ms,
-        best_timings.search_ms, 0.0, total_time_ms,
-        compute_recall, k_top, best_timings.recall,
-        threads, best_max_dist, 0,
-        k_graph, k_ext, eps_ext, 0, count, dims, 0, opt_target,
-        flas_ms, opt_ms
-    );
+    sisap_common::print_summary((use_flas ? "FP32 Build, FP16 Search (FLAS)" : "FP32 Build, FP16 Search"),
+                                3,
+                                load_ms,
+                                0.0,
+                                build_ms,
+                                convert_ms,
+                                prune_ms,
+                                best_timings.search_ms,
+                                0.0,
+                                total_time_ms,
+                                compute_recall,
+                                k_top,
+                                best_timings.recall,
+                                threads,
+                                best_max_dist,
+                                0,
+                                k_graph,
+                                k_ext,
+                                eps_ext,
+                                0,
+                                count,
+                                dims,
+                                0,
+                                opt_target,
+                                flas_ms,
+                                opt_ms);
 
     return 0;
 }
 
-} // namespace task2::mode_fp16
+}  // namespace task2::mode_fp16

@@ -3,7 +3,7 @@
 /**
  * @file mode6.h
  * @brief Benchmark Mode 6: EVP Build, FP16 Asymmetric Search (evp-build-fp16-asymmetric-search)
- * 
+ *
  * Behavior:
  * 1. Quantizes training features to EVP bits representation.
  * 2. Builds a SizeBoundedGraph using the EvpBits metric.
@@ -12,33 +12,32 @@
  * 5. No candidate reranking is performed.
  */
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <functional>
 #include <limits>
+#include <numeric>
 #include <random>
-#include <algorithm>
 #include <thread>
 #include <vector>
-#include <numeric>
-#include <filesystem>
 
 #if defined(USE_SSE) || defined(USE_AVX) || defined(USE_AVX512)
-#include <immintrin.h>
+    #include <immintrin.h>
 #endif
 
+#include "../hdf5_reader.h"
+#include "../sisap_common.h"
 #include "builder.h"
 #include "concurrent.h"
 #include "distances.h"
-#include "graph/sizebounded_graph.h"
 #include "graph/readonly_graph.h"
+#include "graph/sizebounded_graph.h"
 #include "quantization/evp_quantize.h"
 #include "repository.h"
-
-#include "../sisap_common.h"
-#include "../hdf5_reader.h"
 
 namespace task1::mode6 {
 
@@ -47,73 +46,60 @@ struct ExplorationTimings {
     float recall = -1.0f;
 };
 
-static ExplorationTimings run_exploration(
-    const deglib::search::SearchGraph& graph,
-    uint32_t k_top,
-    uint32_t max_distance_count,
-    uint8_t threads,
-    bool compute_recall,
-    const std::vector<std::vector<int32_t>>& gt_data,
-    const std::string& output_path,
-    const std::vector<std::vector<std::byte>>& query_data_vecs,
-    double build_time_s)
-{
+static ExplorationTimings run_exploration(const deglib::search::SearchGraph& graph,
+                                          uint32_t k_top,
+                                          uint32_t max_distance_count,
+                                          uint8_t threads,
+                                          bool compute_recall,
+                                          const std::vector<std::vector<int32_t>>& gt_data,
+                                          const std::string& output_path,
+                                          const std::vector<std::vector<std::byte>>& query_data_vecs,
+                                          double build_time_s) {
     size_t count = graph.size();
     std::vector<std::vector<uint32_t>> results(count);
     std::vector<std::vector<float>> results_dists(count);
 
-    double t_start = sisap_common::now_ms();
-
-    const size_t chunk_size = 8192;
+    // Aim for ~8 chunks per thread so even small query sets spread across all threads
+    const size_t chunk_size =
+        std::clamp((count + static_cast<size_t>(threads) * 8 - 1) / (static_cast<size_t>(threads) * 8), size_t{1}, size_t{8196});
     const size_t num_chunks = (count + chunk_size - 1) / chunk_size;
 
-    std::vector<double> chunk_search_times(num_chunks, 0.0);
+    double t_start = sisap_common::now_ms();
+    deglib::concurrent::parallel_for(static_cast<size_t>(0), num_chunks, threads, 1, [&](size_t chunk_id, size_t) {
+        size_t start = chunk_id * chunk_size;
+        size_t end = std::min(start + chunk_size, count);
+        size_t num_items = end - start;
 
-    deglib::concurrent::parallel_for(static_cast<size_t>(0), num_chunks, threads, 1,
-        [&](size_t chunk_id, size_t) {
-            size_t start = chunk_id * chunk_size;
-            size_t end = std::min(start + chunk_size, count);
-            size_t num_items = end - start;
+        for (size_t i = 0; i < num_items; ++i) {
+            size_t label = start + i;
+            size_t entry_idx = graph.getInternalIndex(static_cast<uint32_t>(label));
 
-            double t_search_start = sisap_common::now_ms();
-            for (size_t i = 0; i < num_items; ++i) {
-                size_t label = start + i;
-                size_t entry_idx = graph.getInternalIndex(static_cast<uint32_t>(label));
+            std::vector<uint32_t> entry_indices = {static_cast<uint32_t>(entry_idx)};
+            const std::byte* query = query_data_vecs[label].data();
+            deglib::search::ResultSet result_queue =
+                graph.search(entry_indices, query, 1000.0f, k_top + 1, nullptr, max_distance_count + 1);
 
-                std::vector<uint32_t> entry_indices = { static_cast<uint32_t>(entry_idx) };
-                const std::byte* query = query_data_vecs[label].data();
-                deglib::search::ResultSet result_queue = graph.search(
-                    entry_indices,
-                    query,
-                    1000.0f,
-                    k_top + 1,
-                    nullptr,
-                    max_distance_count + 1);
-
-                auto& res = results[label];
-                auto& rdist = results_dists[label];
-                res.reserve(result_queue.size());
-                rdist.reserve(result_queue.size());
-                while (!result_queue.empty()) {
-                    const auto& top = result_queue.top();
-                    if (top.getInternalIndex() != entry_idx) {
-                        res.push_back(graph.getExternalLabel(top.getInternalIndex()));
-                        rdist.push_back(top.getDistance());
-                    }
-                    result_queue.pop();
+            auto& res = results[label];
+            auto& rdist = results_dists[label];
+            res.reserve(result_queue.size());
+            rdist.reserve(result_queue.size());
+            while (!result_queue.empty()) {
+                const auto& top = result_queue.top();
+                if (top.getInternalIndex() != entry_idx) {
+                    res.push_back(graph.getExternalLabel(top.getInternalIndex()));
+                    rdist.push_back(top.getDistance());
                 }
-                std::reverse(res.begin(), res.end());
-                std::reverse(rdist.begin(), rdist.end());
-                if (res.size() > k_top) {
-                    res.resize(k_top);
-                    rdist.resize(k_top);
-                }
+                result_queue.pop();
             }
-            chunk_search_times[chunk_id] = sisap_common::now_ms() - t_search_start;
-        });
-
-    double total_ms = sisap_common::now_ms() - t_start;
-    double sum_search_ms = std::accumulate(chunk_search_times.begin(), chunk_search_times.end(), 0.0) / threads;
+            std::reverse(res.begin(), res.end());
+            std::reverse(rdist.begin(), rdist.end());
+            if (res.size() > k_top) {
+                res.resize(k_top);
+                rdist.resize(k_top);
+            }
+        }
+    });
+    double search_ms = sisap_common::now_ms() - t_start;
 
     float recall = -1.0f;
     if (compute_recall) {
@@ -123,26 +109,25 @@ static ExplorationTimings run_exploration(
             results[i].resize(k_top, std::numeric_limits<uint32_t>::max());
             results_dists[i].resize(k_top, std::numeric_limits<float>::max());
         }
-        sisap_common::write_knns_dists(output_path, results, results_dists, build_time_s, sum_search_ms / 1000.0);
+        sisap_common::write_knns_dists(output_path, results, results_dists, build_time_s, search_ms / 1000.0);
     }
 
-    return { sum_search_ms, recall };
+    return {search_ms, recall};
 }
 
-static int run(
-    const std::filesystem::path& data_path,
-    uint32_t threads,
-    uint32_t non_zeros,
-    uint8_t k_graph, uint8_t k_ext,
-    float eps_ext,
-    uint32_t k_top,
-    const std::vector<uint32_t>& max_dist_list,
-    bool compute_recall,
-    float goal_recall,
-    const std::string& output_path,
-    const std::string& graph_path,
-    uint32_t prune_worst = 0)
-{
+static int run(const std::filesystem::path& data_path,
+               uint32_t threads,
+               uint32_t non_zeros,
+               uint8_t k_graph,
+               uint8_t k_ext,
+               float eps_ext,
+               uint32_t k_top,
+               const std::vector<uint32_t>& max_dist_list,
+               bool compute_recall,
+               float goal_recall,
+               const std::string& output_path,
+               const std::string& graph_path,
+               uint32_t prune_worst = 0) {
     const std::string h5path = data_path.string();
     auto datasets = hdf5_reader::scan_datasets(h5path);
     auto& train_info = hdf5_reader::find_dataset(datasets, "train");
@@ -156,9 +141,7 @@ static int run(
     if (compute_recall) {
         gt_data = sisap_common::load_ground_truth(h5path, datasets, k_top);
         if (count != gt_data.size()) {
-            std::fprintf(stderr,
-                "Error: train and allknn must contain the same number of entries (%zu vs %zu)\n",
-                count, gt_data.size());
+            std::fprintf(stderr, "Error: train and allknn must contain the same number of entries (%zu vs %zu)\n", count, gt_data.size());
             return 1;
         }
     }
@@ -187,18 +170,25 @@ static int run(
             graph_load_ms = sisap_common::now_ms() - t_load_graph_start;
             std::printf("Graph loaded successfully in %.2f ms\n", graph_load_ms);
         } else {
-            std::fprintf(stderr, "Warning: Saved graph properties do not match dataset: metric=%d vs %d, dim=%u vs %zu, size=%u vs %zu. Rebuilding.\n",
-                         (int)fs.metric(), (int)deglib::Metric::EvpBits, (unsigned)fs.dim(), dims, g.size(), count);
+            std::fprintf(
+                stderr,
+                "Warning: Saved graph properties do not match dataset: metric=%d vs %d, dim=%u vs %zu, size=%u vs %zu. Rebuilding.\n",
+                (int)fs.metric(),
+                (int)deglib::Metric::EvpBits,
+                (unsigned)fs.dim(),
+                dims,
+                g.size(),
+                count);
         }
     }
 
     if (!loaded) {
-        std::printf("Building graph: k_graph=%u, k_ext=%u, eps_ext=%.3f, non_zeros=%u, threads=%u\n", k_graph, k_ext, eps_ext, non_zeros, threads);
+        std::printf(
+            "Building graph: k_graph=%u, k_ext=%u, eps_ext=%.3f, non_zeros=%u, threads=%u\n", k_graph, k_ext, eps_ext, non_zeros, threads);
 
         // Quantize all upfront once (highly optimized, parallel, zero raw copy)
         double t1 = sisap_common::now_ms();
-        auto quantized = deglib::quantization::quantize_batch(
-            train_vectors, static_cast<uint32_t>(dims), non_zeros, threads);
+        auto quantized = deglib::quantization::quantize_batch(train_vectors, static_cast<uint32_t>(dims), non_zeros, threads);
         quantize_ms = sisap_common::now_ms() - t1;
 
         graph_ptr = std::make_unique<deglib::graph::SizeBoundedGraph>(static_cast<uint32_t>(count), k_graph, feature_space);
@@ -206,16 +196,7 @@ static int run(
 
         std::mt19937 rnd(42);
         deglib::builder::EvenRegularGraphBuilder builder(
-            graph, rnd,
-            deglib::builder::OptimizationTarget::LowLID,
-            k_ext, eps_ext,
-            0, 0.0f,
-            5,
-            0, 0,
-            true,
-            false,
-            false
-        );
+            graph, rnd, deglib::builder::OptimizationTarget::LowLID, k_ext, eps_ext, 0, 0.0f, 5, 0, 0, true, false, false);
         builder.setThreadCount(static_cast<uint32_t>(threads));
         builder.setBatchSize(64, 128);
 
@@ -241,9 +222,11 @@ static int run(
             build_ms += chunk_build_ms;
 
             double elapsed_s = (sisap_common::now_ms() - t_build_start) / 1000.0;
-            std::printf("  Chunk [%6zuk - %6zuk): Build = %.2fs | Elapsed = %.2fs\n", 
-                        start_row / 1000, (start_row + current_chunk_size) / 1000, 
-                        chunk_build_ms / 1000.0, elapsed_s);
+            std::printf("  Chunk [%6zuk - %6zuk): Build = %.2fs | Elapsed = %.2fs\n",
+                        start_row / 1000,
+                        (start_row + current_chunk_size) / 1000,
+                        chunk_build_ms / 1000.0,
+                        elapsed_s);
         }
 
         if (!graph_path.empty()) {
@@ -280,11 +263,18 @@ static int run(
         if (!compute_recall && !output_path.empty()) {
             point_output = output_path + "/op_md" + std::to_string(max_dist_val) + ".bin";
         }
-        auto timings = run_exploration(readonly_asym_graph, k_top, max_dist_val, static_cast<uint8_t>(threads),
-                                             compute_recall, gt_data, point_output, train_vectors, build_time_s);
+        auto timings = run_exploration(readonly_asym_graph,
+                                       k_top,
+                                       max_dist_val,
+                                       static_cast<uint8_t>(threads),
+                                       compute_recall,
+                                       gt_data,
+                                       point_output,
+                                       train_vectors,
+                                       build_time_s);
 
-        std::printf("  max_dist=%u has recall %.2f %% and time %.1f s\n",
-                    max_dist_val, timings.recall * 100.0f, timings.explore_ms / 1000.0);
+        std::printf(
+            "  max_dist=%u has recall %.2f %% and time %.1f s\n", max_dist_val, timings.recall * 100.0f, timings.explore_ms / 1000.0);
 
         bool is_better = false;
         if (timings.recall >= goal_recall) {
@@ -303,16 +293,31 @@ static int run(
     std::printf("\n");
     double total_time_ms = load_ms + quantize_ms + build_ms + conversion_ms + best_timings.explore_ms;
 
-    sisap_common::print_summary(
-        "EVP Build, Asymmetric FP16 & EVP Explore", 6,
-        load_ms, quantize_ms, build_ms, conversion_ms, prune_ms,
-        best_timings.explore_ms, 0.0, total_time_ms,
-        compute_recall, k_top, best_timings.recall,
-        threads, best_max_dist, prune_worst,
-        k_graph, k_ext, eps_ext, non_zeros, count, dims, 0
-    );
+    sisap_common::print_summary("EVP Build, Asymmetric FP16 & EVP Explore",
+                                6,
+                                load_ms,
+                                quantize_ms,
+                                build_ms,
+                                conversion_ms,
+                                prune_ms,
+                                best_timings.explore_ms,
+                                0.0,
+                                total_time_ms,
+                                compute_recall,
+                                k_top,
+                                best_timings.recall,
+                                threads,
+                                best_max_dist,
+                                prune_worst,
+                                k_graph,
+                                k_ext,
+                                eps_ext,
+                                non_zeros,
+                                count,
+                                dims,
+                                0);
 
     return 0;
 }
 
-} // namespace task1::mode6
+}  // namespace task1::mode6
