@@ -33,7 +33,7 @@ import h5py
 import numpy as np
 
 DEGLIB_BIN = os.environ.get("DEGLIB_BIN", "/usr/local/bin/deglib_sisap")
-ALGO = "deglib-evp"
+ALGO = "deglib"
 THREADS = os.environ.get("DEGLIB_THREADS", "8")
 
 # --- per-dataset parameter profiles ------------------------------------------
