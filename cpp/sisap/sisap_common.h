@@ -326,6 +326,40 @@ inline std::vector<std::vector<int32_t>> load_ground_truth(
     return gt_data;
 }
 
+inline std::vector<std::vector<int32_t>> load_ground_truth_by_name(
+    const std::string& h5path,
+    const std::map<std::string, hdf5_reader::DatasetInfo>& datasets,
+    const std::string& knn_name,
+    uint32_t k_top)
+{
+    auto& gt_info = hdf5_reader::find_dataset(datasets, knn_name);
+    std::vector<std::vector<int32_t>> gt_data;
+    if (gt_info.element_size == 4) {
+        auto gt_matrix = hdf5_reader::read_matrix_int32(h5path, gt_info);
+        gt_data.resize(gt_matrix.size());
+        for (size_t i = 0; i < gt_matrix.size(); ++i) {
+            const auto& row = gt_matrix[i];
+            size_t n = std::min(static_cast<size_t>(k_top), row.size());
+            gt_data[i].reserve(n);
+            for (size_t j = 0; j < n; ++j) {
+                gt_data[i].push_back(row[j]);
+            }
+        }
+    } else {
+        auto gt_matrix = hdf5_reader::read_matrix_int64(h5path, gt_info);
+        gt_data.resize(gt_matrix.size());
+        for (size_t i = 0; i < gt_matrix.size(); ++i) {
+            const auto& row = gt_matrix[i];
+            size_t n = std::min(static_cast<size_t>(k_top), row.size());
+            gt_data[i].reserve(n);
+            for (size_t j = 0; j < n; ++j) {
+                gt_data[i].push_back(static_cast<int32_t>(row[j]));
+            }
+        }
+    }
+    return gt_data;
+}
+
 inline float compute_recall(
     const std::vector<std::vector<int32_t>>& gt_data,
     const std::vector<std::vector<uint32_t>>& results,

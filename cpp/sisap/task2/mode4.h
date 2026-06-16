@@ -73,6 +73,7 @@ Dataset Info:
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -82,7 +83,6 @@ Dataset Info:
 #include <random>
 #include <thread>
 #include <vector>
-
 
 #if defined(USE_SSE) || defined(USE_AVX) || defined(USE_AVX512)
     #include <immintrin.h>
@@ -96,7 +96,6 @@ Dataset Info:
 #include "graph/readonly_graph.h"
 #include "graph/sizebounded_graph.h"
 #include "repository.h"
-
 
 namespace task2::mode_l2_converted {
 
@@ -228,25 +227,15 @@ static int run(const std::filesystem::path& data_path,
     std::vector<std::vector<int32_t>> gt_data;
     if (compute_recall) {
         if (knn_name) {
-            gt_info_ptr = &hdf5_reader::find_dataset(datasets, knn_name);
-            auto gt_matrix = hdf5_reader::read_matrix_int64(h5path, *gt_info_ptr);
+            gt_data = sisap_common::load_ground_truth_by_name(h5path, datasets, knn_name, k_top);
 
-            if (gt_matrix.size() != query_count) {
+            if (gt_data.size() != query_count) {
                 std::fprintf(stderr,
                              "Error: queries (%zu) and %s (%zu) must have the same number of rows\n",
                              query_count,
                              knn_name,
-                             gt_matrix.size());
+                             gt_data.size());
                 return 1;
-            }
-
-            gt_data.resize(gt_matrix.size());
-            for (size_t i = 0; i < gt_data.size(); ++i) {
-                const auto& row = gt_matrix[i];
-                size_t n = std::min(static_cast<size_t>(k_top), row.size());
-                for (size_t j = 0; j < n; ++j) {
-                    gt_data[i].push_back(static_cast<int32_t>(row[j]));
-                }
             }
         } else {
             std::fprintf(stderr, "No ground truth dataset found for recall computation.\n");
@@ -344,7 +333,7 @@ static int run(const std::filesystem::path& data_path,
                 (int)fs.metric(),
                 (int)feature_space.metric(),
                 (unsigned)fs.dim(),
-                (unsigned)new_dims,
+                new_dims,
                 graph_size,
                 count);
         }
