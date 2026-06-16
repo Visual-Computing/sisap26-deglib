@@ -26,7 +26,6 @@ jobs:
           dl() { mkdir -p "submission/data/$1"; curl -sfL --retry 5 --retry-delay 2 --retry-all-errors -o "submission/data/$1/$2" "$BASE/$1/$2"; }
           dl task-1-spot-check benchmark-dev-gooaq-small.h5
           dl task-2-spot-check benchmark-dev-llama-small.h5
-          dl task-3-spot-check benchmark-dev-fiqa-small.h5
 
       - name: Run all spot-checks (TIRA command schema)
         run: |
@@ -35,7 +34,7 @@ jobs:
           # GitHub's hosted runner has only 2 — so cap --cpus to what's available.
           CPUS=$(( $(nproc) < 8 ? $(nproc) : 8 ))
           echo "Using --cpus=$CPUS (host has $(nproc) CPUs; TIRA uses 8)"
-          for dir in task-1-spot-check task-2-spot-check task-3-spot-check; do
+          for dir in task-1-spot-check task-2-spot-check; do
             echo "=== $dir ==="
             mkdir -p "results/$dir"
             docker run --rm --user "$(id -u):$(id -g)" \

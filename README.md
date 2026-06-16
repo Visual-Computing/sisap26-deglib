@@ -112,10 +112,8 @@ uv run tira-cli code-submission \
 ### Step 4 — Trigger evaluation in the TIRA UI
 
 1. Navigate to the task page, click **Submit** → **Code Submissions**.
-2. Select your submission, choose a dataset and hardware configuration.
+2. Select your submission, choose a dataset and hardware configuration and trigger a run.
 3. The organizers will handle execution on all datasets once your submission looks correct.
-
----
 
 
 
@@ -125,23 +123,30 @@ uv run tira-cli code-submission \
 # Build the submission image
 docker build -t sisap-deglib .
 
-# Run one task the way TIRA does (your-dataset-dir holds the .h5 and config-dir the config.json)
+# Run one task the way TIRA does e.g. task-2-spot-check (<your-dataset-dir> holds the .h5)
 mkdir -p results
 docker run --rm --cpus=8 --memory=24g \
-    -v "$PWD/your-dataset-dir:/app/dataset:ro" \
+    -v "$PWD/<your-dataset-dir>/:/app/dataset:ro" \
     -v "$PWD/results:/app/results:rw" \
     sisap-deglib \
-    python3 /app/search.py --input '/app/dataset/*.h5' \
-        --task-description /app/data/config-dir/config.json --output /app/results
+    python3 /app/search.py --input '/app/dataset/benchmark-dev-llama-small.h5' \
+        --task-description /app/data/task-2-spot-check/config.json --output /app/results
 
-# Score the results against the dataset ground truth
-uv --directory submission run eval.py --results ../results ../res.csv
+# Install/update workspace dependencies
+uv sync
+
+# Score the results against the dataset ground truth (saves res_task2.csv under results/)
+uv --directory submission run eval.py --results ../results ../results/res_task2.csv
+
+# Plot the recall-vs-QPS curve (saves result_*.png under results/)
+uv --directory submission run plot.py --task task2 ../results/res_task2.csv
+mv submission/result_*.png results/
 ```
 
 ### Building just the C++ binary
 
 ```bash
-cmake -S cpp -B cpp/build -DCMAKE_BUILD_TYPE=Release -DFORCE_AVX2=ON
+cmake -S cpp -B cpp/build -DCMAKE_BUILD_TYPE=Release
 cmake --build cpp/build --target deglib_sisap -j"$(nproc)"
 
 # Usage: deglib_sisap <task1|task2> <input.h5> <mode> [options]
@@ -150,9 +155,6 @@ cpp/build/bin/deglib_sisap task2 dataset.h5 mode5 \
     --no-recall --output results_dir \
     --k-top 30 --max-dist 5000,7000 --eps-search 0.18,0.2 --flas
 ```
-
-`--march`/AVX note: the build is pinned to **AVX2 (no AVX-512)** because the eval
-node is an AMD EPYC 7F72 (Zen 2) with 8 vCPU / 24 GB RAM and no AVX-512.
 
 ## Continuous integration
 
