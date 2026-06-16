@@ -24,10 +24,10 @@
  *   1. Recall mode (default):
  *      Loads the "allknn/knns" ground truth, runs the benchmark, and prints Recall@K.
  *
- *   2. Save mode (--no-recall --output <path>):
- *      Skips ground-truth loading, runs the search once, and writes the retrieved
- *      neighbor indices to a binary ivecs file (one row per query; each row:
- *      uint32_t count followed by count × uint32_t label values).
+ *   2. Save mode (--no-recall --output <dir>):
+ *      Skips ground-truth loading, runs the parameter sweep, and writes one binary
+ *      result file per operating point (max_dist / evpK combination) into the
+ *      output directory, each holding neighbour ids and their distances.
  *
  * Benchmark Modes
  * ---------------
@@ -80,7 +80,7 @@
  *   --max-dist <n>     Maximum distance computations per query during exploration (default: 200).
  *   --evpK <n>         Override internal candidate list size (default: auto).
  *   --no-recall        Skip recall computation; requires --output.
- *   --output <path>    Write results to a binary ivecs file.
+ *   --output <dir>     Write one binary result file per operating point into this directory.
  *
  * Examples
  * --------
@@ -91,7 +91,7 @@
  *   .\deglib_sisap_task1.exe dataset.h5 evp-rerank --max-dist 200
  *
  *   # Asymmetric search + rerank, save results (mode7)
- *   .\deglib_sisap_task1.exe dataset.h5 mode7 --max-dist 200 --evpK 50 --no-recall --output results.ivecs
+ *   .\deglib_sisap_task1.exe dataset.h5 mode7 --max-dist 200 --evpK 50 --no-recall --output results_dir
  *
  *   # Or run via combined entry point
  *   .\deglib_sisap.exe task1 dataset.h5 mode4 --max-dist 200
@@ -165,8 +165,8 @@ int main(int argc, char* argv[]) {
             std::fprintf(stderr, "                     current worst in the search list should be explored (default: 0.001).\n");
             std::fprintf(stderr, "  --no-recall        Disables loading ground-truth datasets and calculating Recall@K metrics.\n");
             std::fprintf(stderr, "                     Required when exporting search results to an output file.\n");
-            std::fprintf(stderr, "  --output <path>    Path to a binary `.ivecs` file where the retrieved nearest-neighbor indices\n");
-            std::fprintf(stderr, "                     will be saved (one row per query; uint32_t count followed by indices).\n");
+            std::fprintf(stderr, "  --output <dir>     Directory to write results into. One binary result file per operating\n");
+            std::fprintf(stderr, "                     point (max_dist / evpK combination) is saved, holding neighbour ids and distances.\n");
             std::fprintf(stderr, "  --evpK <list>      Candidate pool size or comma-separated list of sizes. Graph search retrieves `evpK` candidates\n");
             std::fprintf(stderr, "                     which are then reranked using exact FP16 inner product. Used in Mode 4 and Mode 7 (default: 50).\n");
             std::fprintf(stderr, "  --max-dist <list>  Exploration search budget or comma-separated list of budgets. Specifies the maximum number of\n");
@@ -231,10 +231,9 @@ int main(int argc, char* argv[]) {
                 std::fprintf(stderr, "Error: --output path must be specified when --no-recall is set.\n");
                 return 1;
             }
-            if (max_dist_list.size() > 1 || evpK_list.size() > 1) {
-                std::fprintf(stderr, "Error: Multiple parameters for --max-dist or --evpK are not allowed when --no-recall is set.\n");
-                return 1;
-            }
+            // In save mode --output is always treated as a DIRECTORY: every mode
+            // writes one result file per operating point (max_dist / evpK
+            // combination), so a parameter sweep never overwrites itself.
         }
 
         // Validate --evpK for reranking modes (Mode 4, Mode 7)

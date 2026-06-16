@@ -24,10 +24,10 @@
  *   1. Recall mode (default):
  *      Loads the "test/knns" ground truth, runs the benchmark, and prints Recall@K.
  *
- *   2. Save mode (--no-recall --output <path>):
- *      Skips ground-truth loading, runs the search once, and writes the retrieved
- *      neighbor indices to a binary ivecs file (one row per query; each row:
- *      uint32_t count followed by count × uint32_t label values).
+ *   2. Save mode (--no-recall --output <dir>):
+ *      Skips ground-truth loading, runs the parameter sweep, and writes one binary
+ *      result file per operating point (eps_search / max_dist combination) into the
+ *      output directory, each holding neighbour ids and their distances.
  *
  * Benchmark Modes
  * ---------------
@@ -81,7 +81,7 @@
  *   --eps-ext <f>      Builder entry-search expansion coefficient (default: 0.001).
  *   --max-dist <n>     Maximum distance computations per query during exploration (default: 200).
  *   --no-recall        Skip recall computation; requires --output.
- *   --output <path>    Write results to a binary ivecs file.
+ *   --output <dir>     Write one binary result file per operating point into this directory.
  *   --graph <path>     File path to save the pre-built graph to, or load a pre-built graph from.
  *   --prune-worst <n>  Number of worst (least similar) neighbors per vertex to replace with self-loops.
  *
@@ -165,8 +165,8 @@ int main(int argc, char* argv[]) {
             std::fprintf(stderr, "                     current worst in the search list should be explored (default: 0.001).\n");
             std::fprintf(stderr, "  --no-recall        Disables loading ground-truth datasets and calculating Recall@K metrics.\n");
             std::fprintf(stderr, "                     Required when exporting search results to an output file.\n");
-            std::fprintf(stderr, "  --output <path>    Path to a binary `.ivecs` file where the retrieved nearest-neighbor indices\n");
-            std::fprintf(stderr, "                     will be saved (one row per query; uint32_t count followed by indices).\n");
+            std::fprintf(stderr, "  --output <dir>     Directory to write results into. One binary result file per operating\n");
+            std::fprintf(stderr, "                     point (eps_search / max_dist combination) is saved, holding neighbour ids and distances.\n");
             std::fprintf(stderr, "  --max-dist <list>  Exploration search budget or comma-separated list of budgets. Specifies the maximum number of\n");
             std::fprintf(stderr, "                     distance computations allowed per query. Main parameter to trade search speed for recall (default: 20000).\n");
             std::fprintf(stderr, "  --graph <path>     File path to save the pre-built graph to, or load a pre-built graph from\n");
@@ -270,10 +270,9 @@ int main(int argc, char* argv[]) {
                 std::fprintf(stderr, "Error: --output path must be specified when --no-recall is set.\n");
                 return 1;
             }
-            if (max_dist_list.size() > 1) {
-                std::fprintf(stderr, "Error: Multiple parameters for --max-dist are not allowed when --no-recall is set.\n");
-                return 1;
-            }
+            // In save mode --output is always a DIRECTORY: every mode writes one
+            // file per (eps_search, max_dist) operating point, so a parameter sweep
+            // never overwrites itself.
         }
 
         std::setvbuf(stdout, NULL, _IONBF, 0);

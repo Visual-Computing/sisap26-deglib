@@ -1,0 +1,10 @@
+{
+    "task": "task3",
+    "data": "train",
+    "queries": "otest/queries",
+    "gt_I": "otest/knns",
+    "k": 30,
+    "dataset_name": "fiqa-dev",
+    "sparse": true,
+    "filename": "fiqa-dev.h5"
+}

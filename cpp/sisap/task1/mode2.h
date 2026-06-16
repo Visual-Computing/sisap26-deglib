@@ -91,6 +91,11 @@ static int run(
 
     double quantize_ms = sisap_common::now_ms() - t1;
 
+    double build_time_s = (load_ms + quantize_ms) / 1000.0;
+    if (!compute_recall && !output_path.empty()) {
+        std::filesystem::create_directories(output_path);
+    }
+
     std::printf("Starting exploration: k_top=%u, prune_worst=0, threads=%u\n", k_top, threads);
     uint32_t best_max_dist = 0;
     float best_recall = -1.0f;
@@ -99,7 +104,8 @@ static int run(
     for (uint32_t max_dist_val : max_dist_list) {
         double t_start = sisap_common::now_ms();
 
-        std::vector<std::vector<uint32_t>> results(count, std::vector<uint32_t>(k_top));
+        std::vector<std::vector<uint32_t>> results(count, std::vector<uint32_t>(k_top, std::numeric_limits<uint32_t>::max()));
+        std::vector<std::vector<float>> results_dists(count, std::vector<float>(k_top, std::numeric_limits<float>::max()));
         const size_t bytes_per_evp = dims / 4;
         const uint32_t dims_u32 = static_cast<uint32_t>(dims);
 
@@ -144,6 +150,7 @@ static int run(
 
                     for (uint32_t k = 0; k < k_top && k < top.size(); ++k) {
                         results[label][k] = top[k].second;
+                        results_dists[label][k] = top[k].first;
                     }
                 }
                 chunk_search_times[chunk_id] = sisap_common::now_ms() - t_search_start;
@@ -151,8 +158,10 @@ static int run(
 
         double total_ms = sisap_common::now_ms() - t_start;
         double search_ms = std::accumulate(chunk_search_times.begin(), chunk_search_times.end(), 0.0) / threads;
-        // Write results to output file if needed
-        sisap_common::ivecs_write(output_path, results);
+        if (!compute_recall && !output_path.empty()) {
+            std::string point_output = output_path + "/op_md" + std::to_string(max_dist_val) + ".bin";
+            sisap_common::write_knns_dists(point_output, results, results_dists, build_time_s, search_ms / 1000.0);
+        }
 
         // --------------------------------------------------------------------------
         // Calculate Recall

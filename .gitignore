@@ -12,3 +12,10 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Local run artifacts and datasets (mounted/downloaded at runtime, not committed)
+results/
+submission/results/
+submission/data/**/*.h5
+submission/res_*.csv
+submission/result_*.png

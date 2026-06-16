@@ -118,7 +118,8 @@ static ExplorationTimings run_search(
     bool compute_recall,
     int num_runs = 1,
     const std::vector<std::vector<int32_t>>& gt_data = {},
-    const std::string& output_path = "")
+    const std::string& output_path = "",
+    double build_time_s = 0.0)
 {
     size_t count = queries.size();
     // Aim for ~8 chunks per thread so even small query sets spread across all threads
@@ -126,10 +127,12 @@ static ExplorationTimings run_search(
         1, (count + static_cast<size_t>(threads) * 8 - 1) / (static_cast<size_t>(threads) * 8));
     const size_t num_chunks = (count + chunk_size - 1) / chunk_size;
     std::vector<std::vector<uint32_t>> results(count);
+    std::vector<std::vector<float>> results_dists(count);
     std::vector<double> run_times;
 
     for (int run = 0; run < num_runs; ++run) {
         std::fill(results.begin(), results.end(), std::vector<uint32_t>());
+        std::fill(results_dists.begin(), results_dists.end(), std::vector<float>());
 
         double t_run_start = sisap_common::now_ms();
         deglib::concurrent::parallel_for(static_cast<size_t>(0), num_chunks, static_cast<uint32_t>(threads), 1,
@@ -151,11 +154,13 @@ static ExplorationTimings run_search(
                         max_dist);
 
                     auto& res = results[q_idx];
+                    auto& rdist = results_dists[q_idx];
                     res.reserve(result_queue.size());
+                    rdist.reserve(result_queue.size());
                     while (!result_queue.empty()) {
-                        const auto cand_idx = result_queue.top().getInternalIndex();
-                        uint32_t external_label = graph.getExternalLabel(cand_idx) + 1;
-                        res.push_back(external_label);
+                        const auto& top = result_queue.top();
+                        res.push_back(graph.getExternalLabel(top.getInternalIndex()) + 1);
+                        rdist.push_back(top.getDistance());
                         result_queue.pop();
                     }
                 }
@@ -170,7 +175,12 @@ static ExplorationTimings run_search(
     if (compute_recall) {
         recall = sisap_common::compute_recall(gt_data, results, k_top);
     } else {
-        sisap_common::ivecs_write(output_path, results);
+        // Pad every row to exactly k_top so the knns/dists matrix is rectangular.
+        for (size_t i = 0; i < count; ++i) {
+            results[i].resize(k_top, std::numeric_limits<uint32_t>::max());
+            results_dists[i].resize(k_top, std::numeric_limits<float>::max());
+        }
+        sisap_common::write_knns_dists(output_path, results, results_dists, build_time_s, avg_ms / 1000.0);
     }
 
     return { avg_ms, recall };
@@ -485,6 +495,13 @@ static int run(
     // --------------------------------------------------------------------------
     std::printf("Starting exploration: k_top=%u, threads=%u\n", k_top, threads);
 
+    // One-time index construction cost shared by every operating point (task 2 is
+    // scored on query time, so this lands in the buildtime attribute).
+    double build_time_s = (load_ms + transform_ms + build_ms + convert_ms + prune_ms + flas_ms + opt_ms) / 1000.0;
+    if (!compute_recall && !output_path.empty()) {
+        std::filesystem::create_directories(output_path);
+    }
+
     float best_recall = -1.0f;
     float best_eps_search = 0.1f;
     uint32_t best_max_dist = 200;
@@ -492,10 +509,15 @@ static int run(
 
     for (float eps_search : eps_search_list) {
         std::printf("\n  --- eps_search=%.3f ---\n", eps_search);
-        
+
         for (uint32_t max_dist_val : max_dist_list) {
+            std::string point_output;
+            if (!compute_recall && !output_path.empty()) {
+                point_output = output_path + "/op_eps" + std::to_string((int)std::lround(eps_search * 1000.0f)) +
+                               "_md" + std::to_string(max_dist_val) + ".bin";
+            }
             auto timings = run_search(fp16_graph, queries, k_top, eps_search, max_dist_val, static_cast<uint8_t>(threads),
-                                           compute_recall, num_runs, gt_data, output_path);
+                                           compute_recall, num_runs, gt_data, point_output, build_time_s);
             timings.search_ms += query_convert_ms;
 
             std::printf("    max_dist=%u has recall %.2f %% and search time %.1f ms\n",

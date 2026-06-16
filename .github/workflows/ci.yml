@@ -1,0 +1,82 @@
+name: CI
+
+# Mandatory reproducibility check: build the submission image and run all three
+# spot-checks through the exact TIRA command schema, then evaluate + plot.
+# Task 3 (sparse) is skipped cleanly by search.py, so the run stays green.
+
+on:
+  push:
+    branches: [main, master, tira-submission]
+    tags: ['*']
+  workflow_dispatch:
+
+jobs:
+  spot-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build submission image
+        run: docker build -t sisap-deglib .
+
+      - name: Download spot-check datasets
+        run: |
+          set -euo pipefail
+          BASE=https://huggingface.co/datasets/SISAP-Challenges/SISAP2026/resolve/main
+          dl() { mkdir -p "submission/data/$1"; curl -sfL --retry 5 --retry-delay 2 --retry-all-errors -o "submission/data/$1/$2" "$BASE/$1/$2"; }
+          dl task-1-spot-check benchmark-dev-gooaq-small.h5
+          dl task-2-spot-check benchmark-dev-llama-small.h5
+          dl task-3-spot-check benchmark-dev-fiqa-small.h5
+
+      - name: Run all spot-checks (TIRA command schema)
+        run: |
+          set -euo pipefail
+          # TIRA grants 8 vCPUs, but Docker rejects --cpus above the host count and
+          # GitHub's hosted runner has only 2 — so cap --cpus to what's available.
+          CPUS=$(( $(nproc) < 8 ? $(nproc) : 8 ))
+          echo "Using --cpus=$CPUS (host has $(nproc) CPUs; TIRA uses 8)"
+          for dir in task-1-spot-check task-2-spot-check task-3-spot-check; do
+            echo "=== $dir ==="
+            mkdir -p "results/$dir"
+            docker run --rm --user "$(id -u):$(id -g)" \
+              --cpus="$CPUS" --memory=24g --memory-swap=24g --memory-swappiness=0 \
+              --volume "$(pwd)/submission/data/$dir:/app/data/ds:ro" \
+              --volume "$(pwd)/results/$dir:/app/results:rw" \
+              sisap-deglib \
+              python3 /app/search.py --input '/app/data/ds/*.h5' \
+                --task-description /app/data/ds/config.json --output /app/results
+          done
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install evaluation dependencies
+        run: pip install numpy scipy h5py pandas matplotlib
+
+      - name: Evaluate and plot (task1 + task2)
+        run: |
+          set -euo pipefail
+          cd submission
+          for t in 1 2; do
+            dir="task-$t-spot-check"
+            cfg="data/$dir/config.json"
+            dataset=$(python -c "import json;print(json.load(open('$cfg'))['dataset_name'])")
+            echo "=== eval task$t / $dataset ==="
+            PYTHONPATH=. python eval.py --results "../results/$dir" "res_task${t}.csv"
+            PYTHONPATH=. python show_operating_points.py --task "task$t" --dataset "$dataset" "res_task${t}.csv"
+            # Task 1 is a graph-construction task (querytime=0); the recall-vs-query-time
+            # plotter only applies to the search tasks, so plot task 2 only (failures
+            # here are real and should fail the build — no blanket '|| true').
+            if [ "$t" = "2" ]; then
+              PYTHONPATH=. python plot.py --task "task$t" --dataset "$dataset" "res_task${t}.csv"
+            fi
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spot-check-results
+          path: |
+            submission/res_task*.csv
+            submission/result_*.png

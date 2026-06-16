@@ -257,43 +257,56 @@ inline std::vector<std::vector<std::byte>> hvecs_read(const char* fname, size_t&
 }
 
 /**
- * @brief Writes a result list to a file in the ivecs binary format.
+ * @brief Writes one operating point (neighbour ids + distances + timings) in a
+ *        simple self-describing binary format consumed by the Python entrypoint.
  *
- * Each row is serialised as:
- *   - 4 bytes : uint32_t  – number of elements in this row (= d)
- *   - d × 4 bytes : uint32_t[] – the element values
+ * Layout (host little-endian):
+ *   int32   n              number of rows (queries)
+ *   int32   k              neighbours per row
+ *   float32 build_time_s   one-time graph construction time for this point
+ *   float32 explore_time_s explore (+rerank) time for this operating point
+ *   uint32[n*k]            neighbour ids (0-based external labels, row-major;
+ *                          UINT32_MAX marks a missing/padding slot)
+ *   float32[n*k]           distances (row-major; aligned with the ids)
  *
- * Each row is written in full (row.size() elements). Callers are expected
- * to have already trimmed the rows to the desired length before calling.
- * If the output path is empty or the file cannot be opened, an error is
- * printed to stderr and the function returns without writing.
- *
- * @param output_path  Destination file path (binary).
- * @param results      2-D result list, one inner vector per query.
+ * Distances are not used for scoring (the evaluator reads only knns) but are
+ * required for a format-compliant output h5, so they are written truthfully.
+ * Every row in `results`/`dists` must already be padded to exactly k entries.
  */
-inline void ivecs_write(
+inline void write_knns_dists(
     const std::string& output_path,
-    const std::vector<std::vector<uint32_t>>& results)
+    const std::vector<std::vector<uint32_t>>& results,
+    const std::vector<std::vector<float>>& dists,
+    double build_time_s,
+    double explore_time_s)
 {
     if (output_path.empty()) {
         return;
     }
-
     std::ofstream out(output_path, std::ios::binary);
     if (!out.is_open()) {
         std::fprintf(stderr, "Error: Could not open output file '%s' for writing.\n",
                       output_path.c_str());
         return;
     }
-
+    const int32_t n = static_cast<int32_t>(results.size());
+    const int32_t k = (n > 0) ? static_cast<int32_t>(results[0].size()) : 0;
+    const float bt = static_cast<float>(build_time_s);
+    const float et = static_cast<float>(explore_time_s);
+    out.write(reinterpret_cast<const char*>(&n), sizeof(n));
+    out.write(reinterpret_cast<const char*>(&k), sizeof(k));
+    out.write(reinterpret_cast<const char*>(&bt), sizeof(bt));
+    out.write(reinterpret_cast<const char*>(&et), sizeof(et));
     for (const auto& row : results) {
-        const uint32_t d = static_cast<uint32_t>(row.size());
-        out.write(reinterpret_cast<const char*>(&d), sizeof(d));
-        out.write(reinterpret_cast<const char*>(row.data()), d * sizeof(uint32_t));
+        out.write(reinterpret_cast<const char*>(row.data()),
+                  static_cast<std::streamsize>(k) * sizeof(uint32_t));
     }
-
-    std::printf("Successfully wrote %zu result rows (ivecs) to '%s'\n",
-                results.size(), output_path.c_str());
+    for (const auto& row : dists) {
+        out.write(reinterpret_cast<const char*>(row.data()),
+                  static_cast<std::streamsize>(k) * sizeof(float));
+    }
+    std::printf("Successfully wrote knns+dists (n=%d, k=%d, build=%.3fs, explore=%.3fs) to '%s'\n",
+                n, k, bt, et, output_path.c_str());
 }
 
 inline std::vector<std::vector<int32_t>> load_ground_truth(
