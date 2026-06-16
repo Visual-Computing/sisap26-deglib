@@ -34,7 +34,8 @@ import numpy as np
 
 DEGLIB_BIN = os.environ.get("DEGLIB_BIN", "/usr/local/bin/deglib_sisap")
 ALGO = "deglib"
-THREADS = os.environ.get("DEGLIB_THREADS", "8")
+THREADS = str(os.environ.get("DEGLIB_THREADS") or os.cpu_count() or 1)
+print(f"[search.py] Using {THREADS} threads")
 
 # --- per-dataset parameter profiles ------------------------------------------
 # Each dataset maps to a LIST of configs; every config is one binary invocation
@@ -96,8 +97,8 @@ TASK2_PROFILES = {
     ],
     # spot-check (14k vectors); smoke test only
     "llama-small": [
-        dict(mode="mode5", k_graph=32, k_ext=64, eps_ext=0.001, build_threads=1, use_flas=True,
-             num_runs=1, max_dist=[2000, 4000, 8000], eps_search=[0.2, 0.3]),
+        dict(mode="mode5", k_graph=32, k_ext=64, eps_ext=0.1, build_threads=1, use_flas=True,
+             num_runs=1, max_dist=[1400,1500,1600], eps_search=[0.05,0.06,0.07,0.08,0.09]),
     ],
 }
 
