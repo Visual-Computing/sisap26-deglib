@@ -1,9 +1,9 @@
 # ============================================================
 # SISAP 2026 deglib submission — single container.
-# Stage 1 builds the deglib_sisap C++ binary (AVX2, no AVX-512 — the EPYC 7F72
-# eval node has no AVX-512). Stage 2 is a thin Python runtime that runs
-# submission/search.py, which drives the binary. Both stages share the same
-# Ubuntu base so the binary's glibc/libstdc++ match the runtime.
+# Stage 1 builds the deglib_sisap C++ binary (default -march=native; pass
+# --build-arg FORCE_AVX2=ON for an AVX2-only build). Stage 2 is a thin Python
+# runtime that runs submission/search.py, which drives the binary. Both stages
+# share the same Ubuntu base so the binary's glibc/libstdc++ match the runtime.
 # Build from the repo root:  docker build -t sisap-deglib .
 # ============================================================
 FROM ubuntu:24.04@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54 AS builder
@@ -15,8 +15,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY cpp /build/cpp
 WORKDIR /build/cpp
-# AVX2-only: drop -march=native so AVX-512 is not re-enabled on AVX-512 build hosts.
-RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFORCE_AVX2=ON \
+# ISA selection:
+#   FORCE_AVX2=OFF (default) -> -march=native: best ISA on the build host. On TIRA
+#     the image is built on the eval node itself, so native targets that exact CPU.
+#   FORCE_AVX2=ON -> AVX2-only build (drops -march=native so AVX-512 is not
+#     re-enabled), for building on an AVX-512 host that must match a non-AVX-512
+#     target (e.g. our build box vs the EPYC 7F72 eval node, which has no AVX-512).
+# Usage (AVX2-only):  docker build --build-arg FORCE_AVX2=ON -t sisap-deglib .
+ARG FORCE_AVX2=OFF
+RUN if [ "$FORCE_AVX2" = "ON" ]; then \
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFORCE_AVX2=ON ; \
+    else \
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-march=native" ; \
+    fi \
     && cmake --build build --target deglib_sisap -j"$(nproc)"
 
 # ============================================================
@@ -25,9 +36,8 @@ RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFORCE_AVX2=ON \
 FROM ubuntu:24.04@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54 AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
-# libgomp1 = OpenMP runtime for the binary; python3 + numpy + h5py for search.py.
+# python3 + numpy + h5py for search.py.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libgomp1 \
         python3 \
         python3-numpy \
         python3-h5py \
