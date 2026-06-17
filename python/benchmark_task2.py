@@ -20,90 +20,83 @@ from docker_runner import Task2Result, Task2Runner
 
 @dataclass
 class ModeConfig:
-    name: str
     mode: str
-    label: str
-    settings: str
-    k_ext: int = 64
     k_graph: int = 32
+    k_ext: int = 64
     eps_ext: float = 0.001
     build_threads: int = 1
     max_dist: str = ""
     eps_search: str = ""
-    num_runs: int = 1
+    num_runs: int = 100
     use_flas: bool = False
+    name: str = ""
+    label: str = ""
+    settings: str = ""
+
+    def __post_init__(self) -> None:
+        flas_str = "flas" if self.use_flas else "noflas"
+        
+        if not self.name:
+            md_clean = self.max_dist.replace(",", "-")
+            self.name = f"{self.mode}_{flas_str}_ke{self.k_ext}_kg{self.k_graph}_ee{self.eps_ext}_md{md_clean}_es{self.eps_search}"
+            
+        if not self.label:
+            self.label = f"{self.mode.capitalize()} ({flas_str}, k_ext={self.k_ext}, k_graph={self.k_graph}, eps_ext={self.eps_ext}, max_dist={self.max_dist}, eps_search={self.eps_search})"
+            
+        if not self.settings:
+            self.settings = f"k_ext={self.k_ext}, k_graph={self.k_graph}, eps_ext={self.eps_ext}, max_dist={self.max_dist}, eps_search={self.eps_search}, flas={self.use_flas}"
 
 
 MODES: list[ModeConfig] = [
     ModeConfig(
-        name="mode3_no_flas",
-        mode="mode3",
-        label="Mode 3: FP32 Build & FP16 Explore (no FLAS)",
-        settings="k_ext=64, k_graph=32, runs=3",
-        max_dist="15000,20000,25000,30000",
-        eps_search="0.25",
-        num_runs=3,
-        use_flas=False,
-    ),
-    ModeConfig(
-        name="mode3_flas",
-        mode="mode3",
-        label="Mode 3: FP32 Build & FP16 Explore (+ FLAS)",
-        settings="k_ext=64, k_graph=32, runs=3",
-        max_dist="15000,18000,20000,23000,25000,27000,30000",
-        eps_search="0.28",
-        num_runs=3,
-        use_flas=True,
-    ),
-    ModeConfig(
-        name="mode5_no_flas",
+        label="Mode5 baseline",
         mode="mode5",
-        label="Mode 5: L2 Build (d+1) & FP16 IP Explore (no FLAS)",
-        settings="k_ext=64, k_graph=32, runs=10",
-        max_dist="5000,6000,7000,8000,9000,10000",
-        eps_search="0.18",
-        num_runs=10,
-        use_flas=False,
-    ),
-    ModeConfig(
-        name="mode5_flas",
-        mode="mode5",
-        label="Mode 5: L2 Build (d+1) & FP16 IP Explore (+ FLAS)",
-        settings="k_ext=64, k_graph=32, runs=10",
         max_dist="5000,6000,7000,8000",
         eps_search="0.18",
-        num_runs=10,
-        use_flas=True,
     ),
     ModeConfig(
-        name="mode4_flas",
-        mode="mode4",
-        label="Mode 4: L2 Build (d+1) & FP32 L2 Explore (+ FLAS)",
-        settings="k_ext=64, k_graph=32, runs=10",
-        max_dist="5000,5500,6000,6500,7000",
-        eps_search="0.008",
-        num_runs=10,
-        use_flas=True,
+        mode="mode5",
+        eps_ext=0.01,
+        max_dist="5000,6000,7000,8000",
+        eps_search="0.18",
     ),
     ModeConfig(
-        name="mode6_flas",
-        mode="mode6",
-        label="Mode 6: L2 Build (d+1) & FP16 L2 Explore (+ FLAS)",
-        settings="k_ext=64, k_graph=32, runs=10",
-        max_dist="5000,5500,6000,6500,7000,8000,9000,10000",
-        eps_search="0.007",
-        num_runs=10,
-        use_flas=True,
+        mode="mode5",
+        k_graph=40,
+        k_ext=80,
+        eps_ext=0.01,
+        max_dist="5000,6000,7000,8000",
+        eps_search="0.16,0.18,0.20",
     ),
     ModeConfig(
-        name="mode7_flas",
+        mode="mode5",
+        k_graph=50,
+        k_ext=100,
+        eps_ext=0.01,
+        max_dist="5000,6000,7000,8000",
+        eps_search="0.16,0.18,0.20",
+    ),    
+    ModeConfig(
+        mode="mode5",
+        k_graph=24,
+        k_ext=48,
+        eps_ext=0.01,
+        max_dist="5000,6000,7000,8000",
+        eps_search="0.16,0.18,0.20",
+    ),    
+    ModeConfig(
+        mode="mode5",
+        k_graph=32,
+        k_ext=96,
+        eps_ext=0.01,
+        max_dist="5000,6000,7000,8000",
+        eps_search="0.16,0.18,0.20",
+    ),
+    ModeConfig(
+        label="Mode7 baseline",
         mode="mode7",
-        label="Mode 7: L2 Build (d+2) & FP16 L2 Explore (+ FLAS)",
-        settings="k_ext=64, k_graph=32, runs=10",
         max_dist="5000,5500,6000,6200,6300,6500,7000",
         eps_search="0.007",
-        num_runs=10,
-        use_flas=True,
     ),
 ]
 
@@ -170,7 +163,7 @@ def generate_outputs(results: dict[str, Task2Result], output_dir: Path, system_i
     # 2. Build plot
     plt.figure(figsize=(10, 6))
     
-    # Custom color and style mapping for modes
+    # Custom color mapping for modes
     color_map = {
         "mode3": "tab:blue",
         "mode5": "tab:green",
@@ -178,6 +171,11 @@ def generate_outputs(results: dict[str, Task2Result], output_dir: Path, system_i
         "mode6": "tab:red",
         "mode7": "tab:purple"
     }
+    
+    from collections import defaultdict
+    mode_counts = defaultdict(int)
+    markers = ["o", "s", "^", "D", "v", "<", ">", "p", "*", "h"]
+    linestyles = ["-", "--", "-.", ":"]
     
     for cfg in MODES:
         res = results.get(cfg.name)
@@ -190,17 +188,28 @@ def generate_outputs(results: dict[str, Task2Result], output_dir: Path, system_i
         recalls = [p["recall"] * 100.0 for p in pts]
         
         color = color_map.get(cfg.mode, "tab:gray")
-        linestyle = "--" if not cfg.use_flas else "-"
+        
+        # Vary line style and marker for configurations of the same mode
+        idx = mode_counts[cfg.mode]
+        mode_counts[cfg.mode] += 1
+        
+        marker = markers[idx % len(markers)]
+        # Use solid-ish lines for flas, and non-solid lines for others, or just cycle them
+        if cfg.use_flas:
+            linestyle = linestyles[idx % len(linestyles)]
+        else:
+            # Offset the linestyle cycle for non-flas to prefer dashed styles
+            linestyle = linestyles[(idx + 1) % len(linestyles)]
         
         # Plot curve
-        plt.plot(times, recalls, marker="o", label=cfg.label, linewidth=2, color=color, linestyle=linestyle)
+        plt.plot(times, recalls, marker=marker, label=cfg.label, linewidth=2, color=color, linestyle=linestyle)
         
         # Highlight best point
         best = find_best_point(res.sweep_points)
         if best:
             plt.scatter(
                 [best["search_time_ms"]], [best["recall"] * 100.0],
-                color=color, edgecolor="black", s=100, zorder=5
+                color=color, edgecolor="black", marker=marker, s=100, zorder=5
             )
 
     import matplotlib.ticker as ticker
