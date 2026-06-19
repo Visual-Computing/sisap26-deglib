@@ -114,6 +114,7 @@
 #include "task1/mode5.h"
 #include "task1/mode6.h"
 #include "task1/mode7.h"
+#include "task1/mode8.h"
 
 #ifdef BUILD_COMBINED_SISAP
 int run_task1(int argc, char* argv[]) {
@@ -147,7 +148,8 @@ int main(int argc, char* argv[]) {
             std::fprintf(stderr, "  evp-build-fp16-external-search | mode5                        : EVP build + FP16 external graph search\n");
             std::fprintf(stderr, "  evp-asymmetric | evp-build-fp16-asymmetric-search | mode6     : EVP build + asymmetric FP16-vs-EVP search\n");
             std::fprintf(stderr, "  evp-asymmetric-rerank | evp-build-fp16-asymmetric-search-rerank | mode7\n");
-            std::fprintf(stderr, "                                                     : EVP build + asymmetric search + FP16 rerank\n\n");
+            std::fprintf(stderr, "                                                     : EVP build + asymmetric search + FP16 rerank\n");
+            std::fprintf(stderr, "  evp-asymmetric-linear | mode8                      : EVP quantization + asymmetric linear search\n\n");
             std::fprintf(stderr, "Options:\n");
             std::fprintf(stderr, "  --threads <n>      Number of CPU worker threads used for parallel EVP quantization,\n");
             std::fprintf(stderr, "                     even-regular graph construction, and query exploration (default: 6).\n");
@@ -290,6 +292,11 @@ int main(int argc, char* argv[]) {
             return task1::mode6::run(path, threads, non_zeros, k_graph, k_ext, eps_ext, k_top, max_dist_list, run_recall, goal_recall, output_path, graph_path, prune_worst);
         } else if (mode == "evp-build-fp16-asymmetric-search-rerank" || mode == "evp-asymmetric-rerank" || mode == "mode7") {
             return task1::mode7::run(path, threads, non_zeros, k_graph, k_ext, eps_ext, k_top, max_dist_list, evpK_list, run_recall, goal_recall, output_path, graph_path, prune_worst);
+        } else if (mode == "evp-asymmetric-linear" || mode == "mode8") {
+            if (!graph_path.empty()) {
+                std::fprintf(stderr, "Warning: --graph-path is not supported by mode8 (EVP asymmetric linear search) and will be ignored.\n");
+            }
+            return task1::mode8::run(path, threads, non_zeros, k_graph, k_ext, eps_ext, k_top, max_dist_list, run_recall, goal_recall, output_path);
         } else {
             std::fprintf(stderr, "Error: Unknown mode '%s'. Choose a valid benchmark mode (e.g. 'evp-rerank', 'evp', etc.) or 'mode1'-'mode7'.\n", mode.c_str());
             return 1;
