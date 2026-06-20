@@ -40,12 +40,84 @@ public:
         const float similarity = compare_avx512(pVect1v, pVect2v, qty_ptr);
     #elif defined(USE_AVX)
         const float similarity = compare_avx2(pVect1v, pVect2v, qty_ptr);
+    #elif defined(USE_SSE)
+        const float similarity = compare_sse(pVect1v, pVect2v, qty_ptr);
     #else
         const float similarity = compare_naive(pVect1v, pVect2v, qty_ptr);
     #endif
 
         const float max_similarity = 2.f * dim;
         return 1.f - (similarity / max_similarity);
+    }
+
+    inline static float compare_sse(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+        const std::byte* a = (const std::byte*)pVect1v;
+        const std::byte* b = (const std::byte*)pVect2v;
+        uint32_t dim = *((uint32_t*)qty_ptr);
+        const size_t mask_bytes = dim / 8;
+
+        const std::byte* ones_a = a;
+        const std::byte* negs_a = a + mask_bytes;
+        const std::byte* ones_b = b;
+        const std::byte* negs_b = b + mask_bytes;
+
+        uint64_t aa = 0, bb = 0, cc = 0, dd = 0;
+
+        const __m128i lookup = _mm_setr_epi8(
+            0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4
+        );
+        const __m128i low_mask = _mm_set1_epi8(0x0F);
+        const __m128i zero = _mm_setzero_si128();
+
+        auto vector_popcnt_sse = [&](__m128i vec) {
+            __m128i lo = _mm_and_si128(vec, low_mask);
+            __m128i hi = _mm_and_si128(_mm_srli_epi16(vec, 4), low_mask);
+            __m128i popcnt1 = _mm_shuffle_epi8(lookup, lo);
+            __m128i popcnt2 = _mm_shuffle_epi8(lookup, hi);
+            return _mm_add_epi8(popcnt1, popcnt2);
+        };
+
+        const size_t block = 16;
+        size_t i = 0;
+        for (; i + block <= mask_bytes; i += block) {
+            __m128i o1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&ones_a[i]));
+            __m128i o2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&ones_b[i]));
+            __m128i n1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&negs_a[i]));
+            __m128i n2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&negs_b[i]));
+
+            __m128i and_aa = _mm_and_si128(o1, o2);
+            __m128i and_bb = _mm_and_si128(n1, n2);
+            __m128i and_cc = _mm_and_si128(o1, n2);
+            __m128i and_dd = _mm_and_si128(o2, n1);
+
+            __m128i sum_aa = _mm_sad_epu8(vector_popcnt_sse(and_aa), zero);
+            __m128i sum_bb = _mm_sad_epu8(vector_popcnt_sse(and_bb), zero);
+            __m128i sum_cc = _mm_sad_epu8(vector_popcnt_sse(and_cc), zero);
+            __m128i sum_dd = _mm_sad_epu8(vector_popcnt_sse(and_dd), zero);
+
+            alignas(16) int64_t val[2];
+            _mm_store_si128(reinterpret_cast<__m128i*>(val), sum_aa);
+            aa += val[0] + val[1];
+            _mm_store_si128(reinterpret_cast<__m128i*>(val), sum_bb);
+            bb += val[0] + val[1];
+            _mm_store_si128(reinterpret_cast<__m128i*>(val), sum_cc);
+            cc += val[0] + val[1];
+            _mm_store_si128(reinterpret_cast<__m128i*>(val), sum_dd);
+            dd += val[0] + val[1];
+        }
+
+        for (; i < mask_bytes; ++i) {
+            unsigned int b1 = static_cast<unsigned int>(static_cast<uint8_t>(ones_a[i]));
+            unsigned int b2 = static_cast<unsigned int>(static_cast<uint8_t>(ones_b[i]));
+            unsigned int n1 = static_cast<unsigned int>(static_cast<uint8_t>(negs_a[i]));
+            unsigned int n2 = static_cast<unsigned int>(static_cast<uint8_t>(negs_b[i]));
+            aa += std::popcount(b1 & b2);
+            bb += std::popcount(n1 & n2);
+            cc += std::popcount(b1 & n2);
+            dd += std::popcount(b2 & n1);
+        }
+
+        return static_cast<float>(aa + bb + dim) - static_cast<float>(cc + dd);
     }
 
     inline static float compare_naive(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
@@ -146,6 +218,51 @@ public:
         uint64_t cc = arr[0] + arr[1] + arr[2] + arr[3];
         _mm256_storeu_si256(reinterpret_cast<__m256i*>(arr), acc_dd);
         uint64_t dd = arr[0] + arr[1] + arr[2] + arr[3];
+
+        // Process 16-byte blocks using SSE if compiled with AVX2
+        const size_t sse_block = 16;
+        if (i + sse_block <= mask_bytes) {
+            __m128i o1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&ones_a[i]));
+            __m128i o2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&ones_b[i]));
+            __m128i n1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&negs_a[i]));
+            __m128i n2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&negs_b[i]));
+
+            __m128i and_aa = _mm_and_si128(o1, o2);
+            __m128i and_bb = _mm_and_si128(n1, n2);
+            __m128i and_cc = _mm_and_si128(o1, n2);
+            __m128i and_dd = _mm_and_si128(o2, n1);
+
+            const __m128i lookup_sse = _mm_setr_epi8(
+                0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4
+            );
+            const __m128i low_mask_sse = _mm_set1_epi8(0x0F);
+            const __m128i zero_sse = _mm_setzero_si128();
+
+            auto vector_popcnt_sse = [&](__m128i vec) {
+                __m128i lo = _mm_and_si128(vec, low_mask_sse);
+                __m128i hi = _mm_and_si128(_mm_srli_epi16(vec, 4), low_mask_sse);
+                __m128i popcnt1 = _mm_shuffle_epi8(lookup_sse, lo);
+                __m128i popcnt2 = _mm_shuffle_epi8(lookup_sse, hi);
+                return _mm_add_epi8(popcnt1, popcnt2);
+            };
+
+            __m128i sum_aa = _mm_sad_epu8(vector_popcnt_sse(and_aa), zero_sse);
+            __m128i sum_bb = _mm_sad_epu8(vector_popcnt_sse(and_bb), zero_sse);
+            __m128i sum_cc = _mm_sad_epu8(vector_popcnt_sse(and_cc), zero_sse);
+            __m128i sum_dd = _mm_sad_epu8(vector_popcnt_sse(and_dd), zero_sse);
+
+            alignas(16) int64_t val[2];
+            _mm_store_si128(reinterpret_cast<__m128i*>(val), sum_aa);
+            aa += val[0] + val[1];
+            _mm_store_si128(reinterpret_cast<__m128i*>(val), sum_bb);
+            bb += val[0] + val[1];
+            _mm_store_si128(reinterpret_cast<__m128i*>(val), sum_cc);
+            cc += val[0] + val[1];
+            _mm_store_si128(reinterpret_cast<__m128i*>(val), sum_dd);
+            dd += val[0] + val[1];
+
+            i += sse_block;
+        }
 
         for (; i < mask_bytes; ++i) {
             unsigned int b1 = static_cast<unsigned int>(static_cast<uint8_t>(ones_a[i]));

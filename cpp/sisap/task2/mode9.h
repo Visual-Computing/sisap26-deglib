@@ -267,12 +267,12 @@ static int run(
     double total_time_ms = load_ms + quantize_ms + timings.search_ms;
 
     sisap_common::print_summary(
-        "EVP Asymmetric Linear Search", 8,
+        "EVP Asymmetric Linear Search", 9,
         load_ms, quantize_ms, 0.0, 0.0, 0.0,
         timings.search_ms, 0.0, total_time_ms,
         compute_recall, k_top, timings.recall,
         threads, 0, 0,
-        0, 0, 0.0f, 0, count, dims, 0,
+        0, 0, 0.0f, non_zeros, count, dims, 0,
         deglib::builder::OptimizationTarget::LowLID, 0.0, 0.0
     );
 
