@@ -36,13 +36,14 @@ class ModeConfig:
 
 
 MODES: list[ModeConfig] = [
-    ModeConfig(name="mode1", mode="fp16", label="FP16 Build+Explore", settings="M=32, MaxDist=100", max_dist=100),
-    # ModeConfig(name="mode2", mode="evp-linear", label="EVP linear search", settings="—"),
+    ModeConfig(name="mode1", mode="fp16", label="FP16 Build+Explore", settings="M=32, MaxDist=92", max_dist=92),
+    ModeConfig(name="mode2", mode="evp-linear", label="EVP linear search", settings="—"),
     ModeConfig(name="mode3", mode="evp", label="EVP Build+Explore", settings="M=32, MaxDist=200"),
-    ModeConfig(name="mode4", mode="evp-rerank", label="EVP Build+Explore+Rerank", settings="M=32, MaxDist=200, evpK=50", evp_k=50),
+    ModeConfig(name="mode4", mode="evp-rerank", label="EVP Build+Explore+Rerank", settings="M=32, MaxDist=220, evpK=50", max_dist=220, evp_k=50),
     ModeConfig(name="mode5", mode="evp-build-fp16-external-search", label="EVP build+FP16 Explore", settings="M=32, MaxDist=200"),
     ModeConfig(name="mode6", mode="evp-asymmetric", label="EVP build+Asym Explore", settings="M=32, MaxDist=200"),
     ModeConfig(name="mode7", mode="evp-asymmetric-rerank", label="EVP build+Asym+Rerank", settings="M=32, MaxDist=200, evpK=50", evp_k=50),
+    ModeConfig(name="mode8", mode="evp-linear", label="EVP asymmetric linear search", settings="—"),
 ]
 
 

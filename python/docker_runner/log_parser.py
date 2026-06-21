@@ -278,6 +278,22 @@ class Task2LogParser:
     ) -> "Task2Result":
         from .result import Task2Result
 
+        sweep_pts = list(self.sweep_points)
+        if not sweep_pts and self.recall_results:
+            search_time_ms = 0.0
+            if self.explore_time_s is not None:
+                search_time_ms = self.explore_time_s * 1000.0
+            elif self.overall_time_s is not None:
+                search_time_ms = self.overall_time_s * 1000.0
+            
+            max_dist, recall_val = self.recall_results[0]
+            sweep_pts.append({
+                "eps_search": 0.0,
+                "max_dist": max_dist,
+                "recall": recall_val,
+                "search_time_ms": search_time_ms,
+            })
+
         return Task2Result(
             mode=mode,
             dataset_size=dataset_size,
@@ -292,7 +308,7 @@ class Task2LogParser:
             flas_time_s=self.flas_time_s,
             overall_time_s=self.overall_time_s,
             recall_results=list(self.recall_results),
-            sweep_points=list(self.sweep_points),
+            sweep_points=sweep_pts,
             raw_logs=list(self._raw_lines),
         )
 

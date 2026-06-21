@@ -16,8 +16,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 from docker_runner import Task2Result, Task2Runner
-
-
 @dataclass
 class ModeConfig:
     mode: str
@@ -32,6 +30,7 @@ class ModeConfig:
     name: str = ""
     label: str = ""
     settings: str = ""
+    non_zeros: int = 0
 
     def __post_init__(self) -> None:
         flas_str = "flas" if self.use_flas else "noflas"
@@ -39,64 +38,97 @@ class ModeConfig:
         if not self.name:
             md_clean = self.max_dist.replace(",", "-")
             self.name = f"{self.mode}_{flas_str}_ke{self.k_ext}_kg{self.k_graph}_ee{self.eps_ext}_md{md_clean}_es{self.eps_search}"
+            if self.non_zeros:
+                self.name += f"_nz{self.non_zeros}"
             
         if not self.label:
             self.label = f"{self.mode.capitalize()} ({flas_str}, k_ext={self.k_ext}, k_graph={self.k_graph}, eps_ext={self.eps_ext}, max_dist={self.max_dist}, eps_search={self.eps_search})"
+            if self.non_zeros:
+                self.label += f" (non_zeros={self.non_zeros})"
             
         if not self.settings:
             self.settings = f"k_ext={self.k_ext}, k_graph={self.k_graph}, eps_ext={self.eps_ext}, max_dist={self.max_dist}, eps_search={self.eps_search}, flas={self.use_flas}"
+            if self.non_zeros:
+                self.settings += f", non_zeros={self.non_zeros}"
 
 
 MODES: list[ModeConfig] = [
     ModeConfig(
-        label="Mode5 baseline",
+        name="mode3_no_flas",
+        mode="mode3",
+        label="Mode 3: FP32 Build & FP16 Explore (no FLAS)",
+        settings="k_ext=64, k_graph=32, runs=3",
+        max_dist="15000,20000,25000,30000",
+        eps_search="0.25",
+        use_flas=False,
+    ),
+    ModeConfig(
+        name="mode3_flas",
+        mode="mode3",
+        label="Mode 3: FP32 Build & FP16 Explore (+ FLAS)",
+        settings="k_ext=64, k_graph=32, runs=3",
+        max_dist="15000,18000,20000,23000,25000,27000,30000",
+        eps_search="0.28",
+        use_flas=True,
+    ),
+    ModeConfig(
+        name="mode5_no_flas",
         mode="mode5",
+        label="Mode 5: L2 Build (d+1) & FP16 IP Explore (no FLAS)",
+        settings="k_ext=64, k_graph=32, runs=10",
+        max_dist="5000,6000,7000,8000,9000,10000",
+        eps_search="0.18",
+        use_flas=False,
+    ),
+    ModeConfig(
+        name="mode5_flas",
+        mode="mode5",
+        label="Mode 5: L2 Build (d+1) & FP16 IP Explore (+ FLAS)",
+        settings="k_ext=64, k_graph=32, runs=10",
         max_dist="5000,6000,7000,8000",
         eps_search="0.18",
+        use_flas=True,
     ),
     ModeConfig(
-        mode="mode5",
-        eps_ext=0.01,
-        max_dist="5000,6000,7000,8000",
-        eps_search="0.18",
+        name="mode4_flas",
+        mode="mode4",
+        label="Mode 4: L2 Build (d+1) & FP32 L2 Explore (+ FLAS)",
+        settings="k_ext=64, k_graph=32, runs=10",
+        max_dist="5000,5500,6000,6500,7000",
+        eps_search="0.008",
+        use_flas=True,
     ),
     ModeConfig(
-        mode="mode5",
-        k_graph=40,
-        k_ext=80,
-        eps_ext=0.01,
-        max_dist="5000,6000,7000,8000",
-        eps_search="0.16,0.18,0.20",
+        name="mode6_flas",
+        mode="mode6",
+        label="Mode 6: L2 Build (d+1) & FP16 L2 Explore (+ FLAS)",
+        settings="k_ext=64, k_graph=32, runs=10",
+        max_dist="5000,5500,6000,6500,7000,8000,9000,10000",
+        eps_search="0.007",
+        use_flas=True,
     ),
     ModeConfig(
-        mode="mode5",
-        k_graph=50,
-        k_ext=100,
-        eps_ext=0.01,
-        max_dist="5000,6000,7000,8000",
-        eps_search="0.16,0.18,0.20",
-    ),    
-    ModeConfig(
-        mode="mode5",
-        k_graph=24,
-        k_ext=48,
-        eps_ext=0.01,
-        max_dist="5000,6000,7000,8000",
-        eps_search="0.16,0.18,0.20",
-    ),    
-    ModeConfig(
-        mode="mode5",
-        k_graph=32,
-        k_ext=96,
-        eps_ext=0.01,
-        max_dist="5000,6000,7000,8000",
-        eps_search="0.16,0.18,0.20",
-    ),
-    ModeConfig(
-        label="Mode7 baseline",
+        name="mode7_flas",
         mode="mode7",
+        label="Mode 7: L2 Build (d+2) & FP16 L2 Explore (+ FLAS)",
+        settings="k_ext=64, k_graph=32, runs=10",
         max_dist="5000,5500,6000,6200,6300,6500,7000",
         eps_search="0.007",
+        use_flas=True,
+    ),
+    ModeConfig(
+        name="mode8",
+        mode="mode8",
+        label="Mode 8: EVP Linear Search",
+        settings="non_zeros=64",
+        non_zeros=64,
+    ),
+    ModeConfig(
+        name="mode9",
+        mode="mode9",
+        label="Mode 9: EVP Asymmetric Linear Search",
+        settings="non_zeros=64",
+        non_zeros=64,
     ),
 ]
 
@@ -119,6 +151,8 @@ def run_mode(runner: Task2Runner, cfg: ModeConfig, num_threads: int) -> Task2Res
         num_runs=cfg.num_runs,
         use_flas=cfg.use_flas,
     )
+    if cfg.non_zeros > 0:
+        kwargs["non_zeros"] = cfg.non_zeros
 
     try:
         result = runner.run(**kwargs)
@@ -169,7 +203,9 @@ def generate_outputs(results: dict[str, Task2Result], output_dir: Path, system_i
         "mode5": "tab:green",
         "mode4": "tab:orange",
         "mode6": "tab:red",
-        "mode7": "tab:purple"
+        "mode7": "tab:purple",
+        "mode8": "tab:brown",
+        "mode9": "tab:pink",
     }
     
     from collections import defaultdict
