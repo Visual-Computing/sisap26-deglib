@@ -43,8 +43,8 @@ REPO_ID = "SISAP-Challenges/SISAP2026"
 REPO_TYPE = "dataset"
 
 DATASET_FILES_TASK1: dict[str, str] = {
-    "small": "benchmark-dev-wikipedia-bge-m3-small.h5",
-    "large": "benchmark-dev-wikipedia-bge-m3.h5",
+    "small": "wikipedia-small/benchmark-dev-wikipedia-bge-m3-small.h5",
+    "large": "wikipedia/benchmark-dev-wikipedia-bge-m3.h5",
     "spot": "task-1-spot-check/benchmark-dev-gooaq-small.h5",
 }
 
@@ -206,7 +206,6 @@ class BaseRunner:
             )
         filename = self.DATASET_FILES[size]
         search_filename = filename.split("/")[-1]
-
         local_path = None
 
         # --- Step 1: look in the local HF cache (no network required) --------
@@ -667,6 +666,7 @@ class Task2Runner(BaseRunner):
         *,
         threads: int = 8,
         build_threads: int = 1,
+        non_zeros: int = 600,
         k_top: int = 30,
         k_graph: int = 30,
         k_ext: int = 30,
@@ -706,6 +706,8 @@ class Task2Runner(BaseRunner):
             ``--threads`` argument (number of CPU worker threads used for query exploration).
         build_threads:
             ``--build-threads`` argument (number of CPU worker threads used for graph construction).
+        non_zeros:
+            ``--non-zeros`` (EVP sparsity parameter).
         k_top:
             ``--k-top`` (number of nearest neighbours to retrieve).
         k_graph:
@@ -752,6 +754,7 @@ class Task2Runner(BaseRunner):
             mode,
             "--threads",            str(threads),
             "--build-threads",      str(build_threads),
+            "--non-zeros",          str(non_zeros),
             "--k-top",              str(k_top),
             "--k-graph",            str(k_graph),
             "--k-ext",              str(k_ext),
