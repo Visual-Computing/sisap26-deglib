@@ -137,14 +137,14 @@ def main() -> None:
             color = "tab:green"
             marker = "o"
             size = 180
-            label = "Mode 4: evp-rerank" if first_mode4 else ""
+            label = "DEG EVP + Reranking" if first_mode4 else ""
             first_mode4 = False
         else:
             # Mode 7 (evp-asymmetric-rerank) -> Purple square
             color = "tab:purple"
             marker = "s"
             size = 130
-            label = "Mode 7: evp-asymmetric-rerank" if first_mode7 else ""
+            label = "DEG EVP-Asym + Reranking" if first_mode7 else ""
             first_mode7 = False
 
         plt.scatter(
