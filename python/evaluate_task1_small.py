@@ -183,11 +183,13 @@ def main() -> None:
     # Add legend with generous spacing
     plt.legend(loc="lower right", labelspacing=1.0)
 
-    # Save high-res plot
+    # Save plots
     plt.tight_layout()
-    plt.savefig(plot_path, dpi=300)
+    plt.savefig(plot_path, dpi=150)
+    plot_path_pdf = plot_path.with_suffix(".pdf")
+    plt.savefig(plot_path_pdf)
     plt.close()
-    print(f"Successfully saved plot to: {plot_path}")
+    print(f"Successfully saved plots to: {plot_path} and {plot_path_pdf}")
 
 if __name__ == "__main__":
     main()
