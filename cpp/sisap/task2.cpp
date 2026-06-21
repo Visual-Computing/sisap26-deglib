@@ -112,6 +112,7 @@
 #include "task2/mode7.h"
 #include "task2/mode8.h"
 #include "task2/mode9.h"
+#include "task2/mode10.h"
 #include "flas/fast_linear_assignment_sorter.hpp"
 
 #ifdef BUILD_COMBINED_SISAP
@@ -155,6 +156,7 @@ int main(int argc, char* argv[]) {
             std::fprintf(stderr, "  l2-fp16-d2 | l2-build-fp16-d2-explore | mode7             : FP32 build (L2-converted d+2) + FP16 L2 search\n");
             std::fprintf(stderr, "  evp-linear | mode8                                    : EVP quantization + brute-force linear search\n");
             std::fprintf(stderr, "  evp-asym-linear | mode9                               : EVP quantization + asymmetric linear search\n");
+            std::fprintf(stderr, "  mode10                                                : FP32 build (L2 converted, IP metric) + FP16 InnerProduct search\n");
             std::fprintf(stderr, "  Use --flas with any FP32 mode to enable FLAS pre-sort.\n\n");
             std::fprintf(stderr, "  --threads <n>      Number of CPU worker threads used for query exploration (default: 6).\n");
             std::fprintf(stderr, "  --non-zeros <n>    EVP Quantization sparsity parameter (default: 600).\n");
@@ -333,8 +335,10 @@ int main(int argc, char* argv[]) {
                 return task2::mode_evp_linear::run(path, threads, non_zeros, k_top, num_runs, max_dist_list, run_recall, goal_recall, output_path);
             } else if (mode == "evp-asym-linear" || mode == "mode9") {
                 return task2::mode_evp_asym_linear::run(path, threads, non_zeros, k_top, num_runs, max_dist_list, run_recall, goal_recall, output_path);
+            } else if (mode == "mode10") {
+                return task2::mode_l2_fp16_ip_build_ip::run(path, threads, build_threads, use_flas, flas_metric, flas_radius_decay, k_graph, k_ext, eps_ext, opt_target, opt_iterations, prune_worst, k_top, num_runs, max_dist_list, eps_search_list, run_recall, goal_recall, output_path, graph_path);
             } else {
-               std::fprintf(stderr, "Error: Unknown mode '%s'. Supported modes: mode1, mode2, mode3, mode4, mode5, mode6, mode7, mode8, mode9\n", mode.c_str());
+               std::fprintf(stderr, "Error: Unknown mode '%s'. Supported modes: mode1, mode2, mode3, mode4, mode5, mode6, mode7, mode8, mode9, mode10\n", mode.c_str());
                return 1;
            }
 

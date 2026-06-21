@@ -7,9 +7,11 @@ This table lists the metrics for each benchmark mode.
 
 | Mode | Method | Settings | Load | Quant | Build | Convert | Explore | Rerank | Total | Recall |
 |:---:|---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1 | FP16 Build+Explore | M=32, MaxDist=100 | 0.2s | 0.0s | 8.6s | 0.0s | 0.7s | 0.0s | 9.5s | 0.85% |
-| 3 | EVP Build+Explore | M=32, MaxDist=200 | 0.2s | 0.5s | 3.8s | 0.0s | 0.4s | 0.0s | 4.9s | 0.68% |
-| 4 | EVP Build+Explore+Rerank | M=32, MaxDist=200, evpK=50 | 0.2s | 0.5s | 3.6s | 0.0s | 0.6s | 0.4s | 5.3s | 0.84% |
-| 5 | EVP build+FP16 Explore | M=32, MaxDist=200 | 0.2s | 0.5s | 3.6s | 0.1s | 1.4s | 0.0s | 5.8s | 0.85% |
-| 6 | EVP build+Asym Explore | M=32, MaxDist=200 | 0.2s | 0.5s | 3.7s | 0.0s | 1.0s | 0.0s | 5.5s | 0.74% |
-| 7 | EVP build+Asym+Rerank | M=32, MaxDist=200, evpK=50 | 0.2s | 0.5s | 3.9s | 0.0s | 1.1s | 0.4s | 6.3s | 0.85% |
+| 1 | FP16 Build+Explore | M=32, MaxDist=92 | 0.2s | 0.0s | 8.5s | 0.0s | 0.6s | 0.0s | 9.3s | 84.87% |
+| 2 | EVP linear search | — | 0.2s | 0.5s | 0.0s | 0.0s | 175.4s | 0.0s | 176.2s | 71.24% |
+| 3 | EVP Build+Explore | M=32, MaxDist=200 | 0.2s | 0.5s | 3.7s | 0.0s | 0.4s | 0.0s | 4.9s | 68.16% |
+| 4 | EVP Build+Explore+Rerank | M=32, MaxDist=220, evpK=50 | 0.2s | 0.6s | 3.9s | 0.0s | 0.6s | 0.4s | 5.7s | 84.84% |
+| 5 | EVP build+FP16 Explore | M=32, MaxDist=200 | 0.2s | 0.5s | 3.8s | 0.1s | 1.4s | 0.0s | 6.0s | 84.87% |
+| 6 | EVP build+Asym Explore | M=32, MaxDist=200 | 0.2s | 0.5s | 3.9s | 0.0s | 1.0s | 0.0s | 5.7s | 73.78% |
+| 7 | EVP build+Asym+Rerank | M=32, MaxDist=200, evpK=50 | 0.2s | 0.6s | 3.8s | 0.0s | 1.1s | 0.4s | 6.1s | 84.85% |
+| 8 | EVP asymmetric linear search | — | 0.2s | 0.5s | 0.0s | 0.0s | 857.4s | 0.0s | 858.1s | 78.54% |

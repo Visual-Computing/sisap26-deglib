@@ -27,6 +27,7 @@ class ModeConfig:
     eps_search: str = ""
     num_runs: int = 100
     use_flas: bool = False
+    flas_metric: str = ""
     name: str = ""
     label: str = ""
     settings: str = ""
@@ -53,24 +54,33 @@ class ModeConfig:
 
 
 MODES: list[ModeConfig] = [
-    ModeConfig(
-        name="mode3_no_flas",
-        mode="mode3",
-        label="Mode 3: FP32 Build & FP16 Explore (no FLAS)",
-        settings="k_ext=64, k_graph=32, runs=3",
-        max_dist="15000,20000,25000,30000",
-        eps_search="0.25",
-        use_flas=False,
-    ),
-    ModeConfig(
-        name="mode3_flas",
-        mode="mode3",
-        label="Mode 3: FP32 Build & FP16 Explore (+ FLAS)",
-        settings="k_ext=64, k_graph=32, runs=3",
-        max_dist="15000,18000,20000,23000,25000,27000,30000",
-        eps_search="0.28",
-        use_flas=True,
-    ),
+    # ModeConfig(
+    #     name="mode1_no_flas",
+    #     mode="mode1",
+    #     label="Mode 1: FP32 Build & FP32 Explore (no FLAS)",
+    #     settings="k_ext=64, k_graph=32, runs=3",
+    #     max_dist="15000,20000,25000,30000",
+    #     eps_search="0.25",
+    #     use_flas=False,
+    # ),
+    # ModeConfig(
+    #     name="mode3_no_flas",
+    #     mode="mode3",
+    #     label="Mode 3: FP32 Build & FP16 Explore (no FLAS)",
+    #     settings="k_ext=64, k_graph=32, runs=3",
+    #     max_dist="15000,20000,25000,30000",
+    #     eps_search="0.25",
+    #     use_flas=False,
+    # ),
+    # ModeConfig(
+    #     name="mode3_flas",
+    #     mode="mode3",
+    #     label="Mode 3: FP32 Build & FP16 Explore (+ FLAS)",
+    #     settings="k_ext=64, k_graph=32, runs=3",
+    #     max_dist="15000,18000,20000,23000,25000,27000,30000",
+    #     eps_search="0.28",
+    #     use_flas=True,
+    # ),
     ModeConfig(
         name="mode5_no_flas",
         mode="mode5",
@@ -80,55 +90,83 @@ MODES: list[ModeConfig] = [
         eps_search="0.18",
         use_flas=False,
     ),
+    # ModeConfig(
+    #     name="mode5_flas",
+    #     mode="mode5",
+    #     label="Mode 5: L2 Build (d+1) & FP16 IP Explore (+ FLAS)",
+    #     settings="k_ext=64, k_graph=32, runs=10",
+    #     max_dist="5000,6000,7000,8000",
+    #     eps_search="0.18",
+    #     use_flas=True,
+    # ),
+    # ModeConfig(
+    #     name="mode4_flas",
+    #     mode="mode4",
+    #     label="Mode 4: L2 Build (d+1) & FP32 L2 Explore (+ FLAS)",
+    #     settings="k_ext=64, k_graph=32, runs=10",
+    #     max_dist="5000,5500,6000,6500,7000",
+    #     eps_search="0.008",
+    #     use_flas=True,
+    # ),
+    # ModeConfig(
+    #     name="mode6_flas",
+    #     mode="mode6",
+    #     label="Mode 6: L2 Build (d+1) & FP16 L2 Explore (+ FLAS)",
+    #     settings="k_ext=64, k_graph=32, runs=10",
+    #     max_dist="5000,5500,6000,6500,7000,8000,9000,10000",
+    #     eps_search="0.007",
+    #     use_flas=True,
+    # ),
+    # ModeConfig(
+    #     name="mode7_flas",
+    #     mode="mode7",
+    #     label="Mode 7: L2 Build (d+2) & FP16 L2 Explore (+ FLAS)",
+    #     settings="k_ext=64, k_graph=32, runs=10",
+    #     max_dist="5000,5500,6000,6200,6300,6500,7000",
+    #     eps_search="0.007",
+    #     use_flas=True,
+    # ),
+    # ModeConfig(
+    #     name="mode8",
+    #     mode="mode8",
+    #     label="Mode 8: EVP Linear Search",
+    #     settings="non_zeros=64",
+    #     non_zeros=64,
+    # ),
+    # ModeConfig(
+    #     name="mode9",
+    #     mode="mode9",
+    #     label="Mode 9: EVP Asymmetric Linear Search",
+    #     settings="non_zeros=64",
+    #     non_zeros=64,
+    # ),
     ModeConfig(
-        name="mode5_flas",
-        mode="mode5",
-        label="Mode 5: L2 Build (d+1) & FP16 IP Explore (+ FLAS)",
+        name="mode10_no_flas",
+        mode="mode10",
+        label="Mode 10: IP Build (d+1) & FP16 IP Explore (no FLAS)",
         settings="k_ext=64, k_graph=32, runs=10",
-        max_dist="5000,6000,7000,8000",
+        max_dist="5000,6000,7000,8000,9000,10000",
+        eps_search="0.18",
+        use_flas=False,
+    ),
+    ModeConfig(
+        name="mode10_flas",
+        mode="mode10",
+        label="Mode 10: IP Build (d+1) & FP16 IP Explore (FLAS)",
+        settings="k_ext=64, k_graph=32, runs=10",
+        max_dist="5000,6000,7000,8000,9000,10000",
         eps_search="0.18",
         use_flas=True,
     ),
     ModeConfig(
-        name="mode4_flas",
-        mode="mode4",
-        label="Mode 4: L2 Build (d+1) & FP32 L2 Explore (+ FLAS)",
+        name="mode10_ip_flas",
+        mode="mode10",
+        label="Mode 10: IP Build (d+1) & FP16 IP Explore (IP FLAS)",
         settings="k_ext=64, k_graph=32, runs=10",
-        max_dist="5000,5500,6000,6500,7000",
-        eps_search="0.008",
+        max_dist="5000,6000,7000,8000,9000,10000",
+        eps_search="0.18",
         use_flas=True,
-    ),
-    ModeConfig(
-        name="mode6_flas",
-        mode="mode6",
-        label="Mode 6: L2 Build (d+1) & FP16 L2 Explore (+ FLAS)",
-        settings="k_ext=64, k_graph=32, runs=10",
-        max_dist="5000,5500,6000,6500,7000,8000,9000,10000",
-        eps_search="0.007",
-        use_flas=True,
-    ),
-    ModeConfig(
-        name="mode7_flas",
-        mode="mode7",
-        label="Mode 7: L2 Build (d+2) & FP16 L2 Explore (+ FLAS)",
-        settings="k_ext=64, k_graph=32, runs=10",
-        max_dist="5000,5500,6000,6200,6300,6500,7000",
-        eps_search="0.007",
-        use_flas=True,
-    ),
-    ModeConfig(
-        name="mode8",
-        mode="mode8",
-        label="Mode 8: EVP Linear Search",
-        settings="non_zeros=64",
-        non_zeros=64,
-    ),
-    ModeConfig(
-        name="mode9",
-        mode="mode9",
-        label="Mode 9: EVP Asymmetric Linear Search",
-        settings="non_zeros=64",
-        non_zeros=64,
+        flas_metric="innerproduct",
     ),
 ]
 
@@ -153,6 +191,8 @@ def run_mode(runner: Task2Runner, cfg: ModeConfig, num_threads: int) -> Task2Res
     )
     if cfg.non_zeros > 0:
         kwargs["non_zeros"] = cfg.non_zeros
+    if cfg.flas_metric:
+        kwargs["flas_metric"] = cfg.flas_metric
 
     try:
         result = runner.run(**kwargs)

@@ -13,119 +13,159 @@
         "dataset_size": "small",
         "exit_code": 0,
         "simd_info": "AVX2, SSE",
-        "load_time_s": 0.21630000000000002,
+        "load_time_s": 0.21559999999999999,
         "quant_time_s": 0.0,
-        "build_time_s": 8.5875,
+        "build_time_s": 8.4971,
         "convert_time_s": 0.0,
-        "explore_time_s": 0.6718999999999999,
+        "explore_time_s": 0.6356,
         "rerank_time_s": 0.0,
-        "overall_time_s": 9.475700000000002,
+        "overall_time_s": 9.3483,
         "recall_results": [
             [
                 1,
-                0.8533
+                0.8487
             ]
         ],
-        "best_recall": 0.8533
+        "best_recall": 0.8487
+    },
+    "mode2": {
+        "mode": "evp-linear",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.2176,
+        "quant_time_s": 0.5484,
+        "build_time_s": 0.0,
+        "convert_time_s": 0.0,
+        "explore_time_s": 175.4,
+        "rerank_time_s": 0.0,
+        "overall_time_s": 176.2,
+        "recall_results": [
+            [
+                1,
+                0.7123999999999999
+            ]
+        ],
+        "best_recall": 0.7123999999999999
     },
     "mode3": {
         "mode": "evp",
         "dataset_size": "small",
         "exit_code": 0,
         "simd_info": "AVX2, SSE",
-        "load_time_s": 0.21680000000000002,
-        "quant_time_s": 0.5368999999999999,
-        "build_time_s": 3.821,
+        "load_time_s": 0.2209,
+        "quant_time_s": 0.5401,
+        "build_time_s": 3.7218,
         "convert_time_s": 0.0,
-        "explore_time_s": 0.357,
+        "explore_time_s": 0.37860000000000005,
         "rerank_time_s": 0.0,
-        "overall_time_s": 4.9316,
+        "overall_time_s": 4.8614,
         "recall_results": [
             [
                 1,
-                0.6818000000000001
+                0.6816
             ]
         ],
-        "best_recall": 0.6818000000000001
+        "best_recall": 0.6816
     },
     "mode4": {
         "mode": "evp-rerank",
         "dataset_size": "small",
         "exit_code": 0,
         "simd_info": "AVX2, SSE",
-        "load_time_s": 0.22019999999999998,
-        "quant_time_s": 0.5446,
-        "build_time_s": 3.5594,
+        "load_time_s": 0.21980000000000002,
+        "quant_time_s": 0.5554,
+        "build_time_s": 3.9057,
         "convert_time_s": 0.0,
-        "explore_time_s": 0.5612,
-        "rerank_time_s": 0.36760000000000004,
-        "overall_time_s": 5.3453,
+        "explore_time_s": 0.6445,
+        "rerank_time_s": 0.392,
+        "overall_time_s": 5.7243,
         "recall_results": [
             [
-                200,
-                0.8420000000000001
+                220,
+                0.8484
             ]
         ],
-        "best_recall": 0.8420000000000001
+        "best_recall": 0.8484
     },
     "mode5": {
         "mode": "evp-build-fp16-external-search",
         "dataset_size": "small",
         "exit_code": 0,
         "simd_info": "AVX2, SSE",
-        "load_time_s": 0.18919999999999998,
-        "quant_time_s": 0.5452,
-        "build_time_s": 3.6254,
-        "convert_time_s": 0.0628,
-        "explore_time_s": 1.395,
+        "load_time_s": 0.1938,
+        "quant_time_s": 0.548,
+        "build_time_s": 3.7763,
+        "convert_time_s": 0.064,
+        "explore_time_s": 1.4424000000000001,
         "rerank_time_s": 0.0,
-        "overall_time_s": 5.817699999999999,
+        "overall_time_s": 6.0245,
         "recall_results": [
             [
                 1,
-                0.8488
+                0.8487
             ]
         ],
-        "best_recall": 0.8488
+        "best_recall": 0.8487
     },
     "mode6": {
         "mode": "evp-asymmetric",
         "dataset_size": "small",
         "exit_code": 0,
         "simd_info": "AVX2, SSE",
-        "load_time_s": 0.218,
-        "quant_time_s": 0.5347999999999999,
-        "build_time_s": 3.7204,
-        "convert_time_s": 0.0299,
-        "explore_time_s": 0.9829,
+        "load_time_s": 0.221,
+        "quant_time_s": 0.5492999999999999,
+        "build_time_s": 3.9261999999999997,
+        "convert_time_s": 0.029,
+        "explore_time_s": 1.0037,
         "rerank_time_s": 0.0,
-        "overall_time_s": 5.4861,
+        "overall_time_s": 5.7292,
         "recall_results": [
             [
                 1,
-                0.7376
+                0.7378
             ]
         ],
-        "best_recall": 0.7376
+        "best_recall": 0.7378
     },
     "mode7": {
         "mode": "evp-asymmetric-rerank",
         "dataset_size": "small",
         "exit_code": 0,
         "simd_info": "AVX2, SSE",
-        "load_time_s": 0.2152,
-        "quant_time_s": 0.5403,
-        "build_time_s": 3.9384,
-        "convert_time_s": 0.0294,
-        "explore_time_s": 1.0976,
-        "rerank_time_s": 0.362,
-        "overall_time_s": 6.300800000000001,
+        "load_time_s": 0.2324,
+        "quant_time_s": 0.5502999999999999,
+        "build_time_s": 3.7636,
+        "convert_time_s": 0.0295,
+        "explore_time_s": 1.1105,
+        "rerank_time_s": 0.3939,
+        "overall_time_s": 6.0861,
         "recall_results": [
             [
                 200,
-                0.8484
+                0.8484999999999999
             ]
         ],
-        "best_recall": 0.8484
+        "best_recall": 0.8484999999999999
+    },
+    "mode8": {
+        "mode": "evp-asymmetric-linear",
+        "dataset_size": "small",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 0.2225,
+        "quant_time_s": 0.5393,
+        "build_time_s": 0.0,
+        "convert_time_s": 0.0,
+        "explore_time_s": 857.4,
+        "rerank_time_s": 0.0,
+        "overall_time_s": 858.1,
+        "recall_results": [
+            [
+                1,
+                0.7854000000000001
+            ]
+        ],
+        "best_recall": 0.7854000000000001
     }
 }
