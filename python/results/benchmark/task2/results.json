@@ -1,10 +1,10 @@
 {
     "system_info": {
-        "cpu_model": "INTEL(R) XEON(R) PLATINUM 8581C CPU @ 2.30GHz",
-        "cpu_physical": 4,
-        "cpu_logical": 8,
-        "ram_total_gb": 29.4,
-        "ram_available_gb": 28.2,
+        "cpu_model": "AMD Ryzen 5 5600G with Radeon Graphics",
+        "cpu_physical": 6,
+        "cpu_logical": 12,
+        "ram_total_gb": 31.3,
+        "ram_available_gb": 15.4,
         "container_cpus": 8,
         "container_ram_gb": 24.0
     },
@@ -214,6 +214,95 @@
             }
         ],
         "best_recall": 0.8399
+    },
+    "mode3_ip_flas": {
+        "mode": "mode3",
+        "dataset_size": "default",
+        "exit_code": 0,
+        "simd_info": "AVX2, SSE",
+        "load_time_s": 4.206300000000001,
+        "quant_time_s": 0.0,
+        "build_time_s": 27.6,
+        "convert_time_s": 0.2395,
+        "explore_time_s": 0.1243,
+        "rerank_time_s": 0.0,
+        "flas_time_s": 58.4,
+        "overall_time_s": 32.2,
+        "recall_results": [
+            [
+                15000,
+                0.8026000000000001
+            ],
+            [
+                18000,
+                0.8220999999999999
+            ],
+            [
+                20000,
+                0.8298000000000001
+            ],
+            [
+                23000,
+                0.8397
+            ],
+            [
+                25000,
+                0.8437
+            ],
+            [
+                27000,
+                0.8464
+            ],
+            [
+                30000,
+                0.8504999999999999
+            ]
+        ],
+        "sweep_points": [
+            {
+                "eps_search": 0.28,
+                "max_dist": 15000,
+                "recall": 0.8026000000000001,
+                "search_time_ms": 124.3
+            },
+            {
+                "eps_search": 0.28,
+                "max_dist": 18000,
+                "recall": 0.8220999999999999,
+                "search_time_ms": 152.9
+            },
+            {
+                "eps_search": 0.28,
+                "max_dist": 20000,
+                "recall": 0.8298000000000001,
+                "search_time_ms": 163.6
+            },
+            {
+                "eps_search": 0.28,
+                "max_dist": 23000,
+                "recall": 0.8397,
+                "search_time_ms": 209.6
+            },
+            {
+                "eps_search": 0.28,
+                "max_dist": 25000,
+                "recall": 0.8437,
+                "search_time_ms": 187.2
+            },
+            {
+                "eps_search": 0.28,
+                "max_dist": 27000,
+                "recall": 0.8464,
+                "search_time_ms": 207.5
+            },
+            {
+                "eps_search": 0.28,
+                "max_dist": 30000,
+                "recall": 0.8504999999999999,
+                "search_time_ms": 205.2
+            }
+        ],
+        "best_recall": 0.8504999999999999
     },
     "mode5_no_flas": {
         "mode": "mode5",

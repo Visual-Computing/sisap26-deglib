@@ -82,6 +82,16 @@ MODES: list[ModeConfig] = [
         use_flas=True,
     ),
     ModeConfig(
+        name="mode3_ip_flas",
+        mode="mode3",
+        label="Mode 3: FP32 Build & FP16 Explore (+ IP FLAS)",
+        settings="k_ext=64, k_graph=32, runs=3",
+        max_dist="15000,18000,20000,23000,25000,27000,30000",
+        eps_search="0.28",
+        use_flas=True,
+        flas_metric="innerproduct",
+    ),
+    ModeConfig(
         name="mode5_no_flas",
         mode="mode5",
         label="Mode 5: L2 Build (d+1) & FP16 IP Explore (no FLAS)",
