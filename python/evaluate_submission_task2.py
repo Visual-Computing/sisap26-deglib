@@ -17,6 +17,7 @@ import matplotlib.ticker as ticker
 TARGET_MODES = [
     "mode3_no_flas",
     "mode3_flas",
+    "mode3_ip_flas",
     "mode10_no_flas",
     "mode10_flas",
     "mode10_ip_flas",
@@ -29,6 +30,7 @@ MODE_DETAILS = {
     "mode1_no_flas": ("mode1", "Mode 1: FP32 Build & FP32 Explore (no FLAS)"),
     "mode3_no_flas": ("mode3", "Mode 3: FP32 IP Build & FP16 IP Explore (no FLAS)"),
     "mode3_flas": ("mode3", "Mode 3: FP32 IP Build & FP16 IP Explore (+ L2 FLAS)"),
+    "mode3_ip_flas": ("mode3", "Mode 3: FP32 IP Build & FP16 IP Explore (+ IP FLAS)"),
     "mode5_no_flas": ("mode5", "Mode 5: FP32 L2 Build (d+1) & FP16 IP Explore (no FLAS)"),
     "mode5_flas": ("mode5", "Mode 5: FP32 L2 Build (d+1) & FP16 IP Explore (+ L2 FLAS)"),
     "mode6_flas": ("mode6", "Mode 6: FP32 L2 Build (d+1) & FP16 L2 Explore (+ L2 FLAS)"),

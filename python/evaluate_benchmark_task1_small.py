@@ -116,9 +116,9 @@ def main() -> None:
     colors = {
         "DEG FP16 Baseline": "tab:blue",
         "DEG EVP Baseline": "tab:orange",
+        "DEG EVP-Asym": "tab:purple",
         "DEG EVP + Reranking": "tab:green",
         "DEG EVP -> FP16 repl": "tab:red",
-        "DEG EVP-Asym": "tab:purple",
     }
 
     markers = {
