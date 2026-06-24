@@ -27,16 +27,16 @@ TARGET_MODES = [
 
 # Mode details mapping
 MODE_DETAILS = {
-    "mode1_no_flas": ("mode1", "Mode 1: FP32 Build & FP32 Explore (no FLAS)"),
-    "mode3_no_flas": ("mode3", "Mode 3: FP32 IP Build & FP16 IP Explore (no FLAS)"),
-    "mode3_flas": ("mode3", "Mode 3: FP32 IP Build & FP16 IP Explore (+ L2 FLAS)"),
-    "mode3_ip_flas": ("mode3", "Mode 3: FP32 IP Build & FP16 IP Explore (+ IP FLAS)"),
-    "mode5_no_flas": ("mode5", "Mode 5: FP32 L2 Build (d+1) & FP16 IP Explore (no FLAS)"),
-    "mode5_flas": ("mode5", "Mode 5: FP32 L2 Build (d+1) & FP16 IP Explore (+ L2 FLAS)"),
-    "mode6_flas": ("mode6", "Mode 6: FP32 L2 Build (d+1) & FP16 L2 Explore (+ L2 FLAS)"),
-    "mode10_no_flas": ("mode10", "Mode 10: FP32 IP Build (d+1) & FP16 IP Explore (no FLAS)"),
-    "mode10_flas": ("mode10", "Mode 10: FP32 IP Build (d+1) & FP16 IP Explore (+ L2 FLAS)"),
-    "mode10_ip_flas": ("mode10", "Mode 10: FP32 IP Build (d+1) & FP16 IP Explore (+ IP FLAS)"),
+    "mode1_no_flas": ("mode1", "Mode 1: FP32 Build & FP32 Search (no FLAS)"),
+    "mode3_no_flas": ("mode3", "Mode 3: FP32 IP Build & FP16 IP Search (no FLAS)"),
+    "mode3_flas": ("mode3", "Mode 3: FP32 IP Build & FP16 IP Search (+ L2 FLAS)"),
+    "mode3_ip_flas": ("mode3", "Mode 3: FP32 IP Build & FP16 IP Search (+ IP FLAS)"),
+    "mode5_no_flas": ("mode5", "Mode 5: FP32 L2 Build (d+1) & FP16 IP Search (no FLAS)"),
+    "mode5_flas": ("mode5", "Mode 5: FP32 L2 Build (d+1) & FP16 IP Search (+ L2 FLAS)"),
+    "mode6_flas": ("mode6", "Mode 6: FP32 L2 Build (d+1) & FP16 L2 Search (+ L2 FLAS)"),
+    "mode10_no_flas": ("mode10", "Mode 10: FP32 IP Build (d+1) & FP16 IP Search (no FLAS)"),
+    "mode10_flas": ("mode10", "Mode 10: FP32 IP Build (d+1) & FP16 IP Search (+ L2 FLAS)"),
+    "mode10_ip_flas": ("mode10", "Mode 10: FP32 IP Build (d+1) & FP16 IP Search (+ IP FLAS)"),
 }
 
 # Style maps for visual consistency and color-blind friendliness
@@ -53,7 +53,7 @@ def get_variant_style(name: str) -> tuple[str, str, int, int]:
     if "no_flas" in name:
         return "o", "--", 7, 140   # Circle, dashed
     elif "ip_flas" in name:
-        return "^", "-.", 8, 160   # Triangle, dash-dot
+        return "^", ":", 8, 160    # Triangle, dotted
     else:
         return "s", "-", 6, 100    # Square, solid (flas)
 
@@ -142,11 +142,11 @@ def main() -> None:
     print(f"Successfully wrote summary table to: {table_path}")
 
     # Generate Plot matching original style but filtered
-    plt.figure(figsize=(10, 6), dpi=150)
+    plt.figure(figsize=(12, 8), dpi=150)
     ax = plt.gca()
 
     # Draw Target Recall Baseline (dotted gray line)
-    plt.axhline(y=80.0, color="gray", linestyle=":", linewidth=2.0, label="Target Recall (80%)")
+    plt.axhline(y=80.0, color="gray", linestyle=":", linewidth=2.5, label="Target Recall (80%)")
 
     # Plot curves for target modes
     for name in TARGET_MODES:
@@ -163,10 +163,13 @@ def main() -> None:
         times = [p["search_time_ms"] for p in pts]
         recalls = [p["recall"] * 100.0 for p in pts]
 
+        # Clean label for legend to remove "Mode X: " prefix
+        clean_label = label.split(":", 1)[1].strip() if ":" in label else label
+
         # Plot curve
         plt.plot(
             times, recalls,
-            marker=marker, label=label, linewidth=2, color=color, linestyle=linestyle, markersize=l_size
+            marker=marker, label=clean_label, linewidth=2.5, color=color, linestyle=linestyle, markersize=l_size + 2
         )
 
         # Highlight best sweep point
@@ -174,13 +177,13 @@ def main() -> None:
         if best:
             plt.scatter(
                 [best["search_time_ms"]], [best["recall"] * 100.0],
-                color=color, edgecolor="black", marker=marker, s=s_size, zorder=5
+                color=color, edgecolor="black", marker=marker, s=s_size + 40, zorder=5
             )
 
     # Style axes and grid
-    plt.xlabel("Search Time (ms)")
-    plt.ylabel("Recall @ 30 (%)")
-    plt.title("Task 2 Benchmark — Recall @ 30 vs Search Time")
+    plt.xlabel("Search Time (ms)", fontsize=20, labelpad=10)
+    plt.ylabel("Recall @ 30 (%)", fontsize=20, labelpad=10)
+    plt.title("Task 2 Benchmark — Recall @ 30 vs Search Time", fontsize=22, pad=15)
     
     # Grid configuration matching original benchmark style
     plt.grid(True, which="both", linestyle=":", alpha=0.8)
@@ -192,9 +195,50 @@ def main() -> None:
     x_ticks = [25, 30, 35, 40, 50, 60, 70, 80, 90, 100, 110]
     ax.set_xticks(x_ticks)
     ax.get_xaxis().set_minor_locator(ticker.NullLocator())
+    ax.tick_params(axis='both', which='major', labelsize=16)
 
-    # Add legend with spacing
-    plt.legend(loc="lower right", labelspacing=1.0)
+    # Construct two legends to look like one single box
+    import matplotlib.lines as mlines
+    from matplotlib.offsetbox import HPacker
+
+    # 1. Base Configs Legend (Colors)
+    base_labels = {
+        "mode3": "FP32 IP Build & FP16 IP Search",
+        "mode10": "FP32 IP Build (d+1) & FP16 IP Search",
+        "mode5": "FP32 L2 Build (d+1) & FP16 IP Search",
+        "mode6": "FP32 L2 Build (d+1) & FP16 L2 Search",
+    }
+    base_handles = [
+        mlines.Line2D([], [], color="gray", linestyle=":", linewidth=2.5, label="Target Recall (80%)")
+    ]
+    legend_order = ["mode3", "mode10", "mode5", "mode6"]
+    for mode_num in legend_order:
+        if mode_num in base_labels:
+            color = COLOR_MAP.get(mode_num, "tab:gray")
+            base_handles.append(
+                mlines.Line2D([], [], color=color, linewidth=3, label=base_labels[mode_num])
+            )
+
+    # 2. Variant Styles Legend (temporary)
+    style_handles = [
+        mlines.Line2D([], [], color="gray", marker="o", linestyle="--", linewidth=2.5, markersize=9, label="no FLAS"),
+        mlines.Line2D([], [], color="gray", marker="s", linestyle="-", linewidth=2.5, markersize=8, label="+ L2 FLAS"),
+        mlines.Line2D([], [], color="gray", marker="^", linestyle=":", linewidth=2.5, markersize=10, label="+ IP FLAS"),
+    ]
+
+    # Create temporary legend with ncol=3
+    leg_temp = ax.legend(handles=style_handles, ncol=3, fontsize=14, handlelength=3.5)
+    main_packer = leg_temp._legend_box.get_children()[1]
+    style_row = HPacker(pad=5, sep=20, children=list(main_packer.get_children()))
+    leg_temp.remove()
+
+    # Add main legend to lower right
+    leg1 = ax.legend(handles=base_handles, loc="lower right", labelspacing=0.8, fontsize=15, handlelength=3.0)
+    ax.add_artist(leg1)
+
+    # Append style_row to the bottom of the main legend's column packer
+    column_packer = leg1._legend_box.get_children()[1].get_children()[0]
+    column_packer.get_children().append(style_row)
 
     # Save plot
     plt.tight_layout()
