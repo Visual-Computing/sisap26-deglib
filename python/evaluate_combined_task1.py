@@ -110,6 +110,16 @@ def main() -> None:
             "recall": res_data.get("best_recall", 0.0) * 100.0
         })
 
+    small_sizes = {
+        "DEG FP16 Baseline": 180,
+        "DEG EVP Baseline": 130,
+        "DEG EVP-Asym": 200,
+        "DEG EVP + Reranking": 130,
+        "DEG EVP -> FP16 repl": 230,
+        "Lin EVP": 160,
+        "Lin EVP Asymm": 180,
+    }
+
     # Create figure with GridSpec to include a LaTeX-style table at the top
     fig = plt.figure(figsize=(15, 11), dpi=150)
     from matplotlib.gridspec import GridSpec
@@ -171,12 +181,13 @@ def main() -> None:
         ("tab:red", "p", "DEG EVP \u2192 FP16 repl.", "EVP", "FP16", "FP16", "no", "DEG EVP -> FP16 repl")
     ]
 
-    y_coords = [0.66, 0.56, 0.46, 0.36, 0.26, 0.16, 0.06]
+    y_coords = [0.70, 0.60, 0.50, 0.40, 0.30, 0.20, 0.10]
     for y, (color, style, app_name, graph, db, query, rerank, key) in zip(y_coords, rows):
         # Draw Symbol directly in the Approach column space
-        ax_table.scatter(-0.04, y, color=color, marker=style, s=100, edgecolor="black", zorder=5, clip_on=False)
+        marker_size = small_sizes.get(key, 150) * 0.7
+        ax_table.scatter(-0.04, y, color=color, marker=style, s=marker_size, edgecolor="black", zorder=5, clip_on=False)
         # Draw Approach name closer to the symbol
-        ax_table.text(-0.015, y, app_name, ha='left', va='center', fontsize=17, clip_on=False)
+        ax_table.text(-0.015, y, app_name, ha='left', va='center', fontsize=18, clip_on=False)
         
         data_entry = small_table_data.get(key, {"quant": "-", "build": "-", "explore": "-", "rerank": "-"})
         row_text = [
@@ -190,7 +201,7 @@ def main() -> None:
             data_entry["rerank"]
         ]
         for x, align, text in zip(data_x[1:], col_align[1:], row_text):
-            ax_table.text(x, y, text, ha=align, va='center', fontsize=17, clip_on=False)
+            ax_table.text(x, y, text, ha=align, va='center', fontsize=18, clip_on=False)
 
     # --- Plot Subplot 1: Task 1 Small ---
     # Draw horizontal baselines and label them directly
@@ -200,7 +211,7 @@ def main() -> None:
     # Target Recall 80% line drawn on both split plots
     ax1_left.axhline(y=80.0, color="gray", linestyle=":", linewidth=2.0)
     ax1_right.axhline(y=80.0, color="gray", linestyle=":", linewidth=2.0)
-    ax1_right.text(0.98, 80.0 + 0.3, "Target Recall (80%)", transform=trans_right, color="gray",
+    ax1_right.text(0.98, 80.0 + 0.3, "Target Recall", transform=trans_right, color="gray",
                    va="bottom", ha="right", fontsize=15, weight='bold')
 
     small_colors = {
@@ -221,15 +232,7 @@ def main() -> None:
         "Lin EVP": "X",
         "Lin EVP Asymm": "P",
     }
-    small_sizes = {
-        "DEG FP16 Baseline": 180,
-        "DEG EVP Baseline": 130,
-        "DEG EVP-Asym": 200,
-        "DEG EVP + Reranking": 130,
-        "DEG EVP -> FP16 repl": 230,
-        "Lin EVP": 160,
-        "Lin EVP Asymm": 180,
-    }
+
 
     # Plot on left or right subplot depending on the time range
     for name, color in small_colors.items():
@@ -254,7 +257,7 @@ def main() -> None:
     ax1_right.set_xlim(100, 1100)
 
     # Configure grid and labels
-    ax1_left.set_xlabel("Total Time (s)", fontsize=21)
+    ax1_left.set_xlabel("Total Time [s]", fontsize=21)
     ax1_left.set_ylabel("Recall @ 15 [%]", fontsize=21)
     ax1_left.set_title("Task 1 Small Benchmark", fontsize=23)
     ax1_left.tick_params(axis='both', which='major', labelsize=17)
@@ -281,17 +284,16 @@ def main() -> None:
     ax1_right.plot((-d * 2.5, +d * 2.5), (-d, +d), **kwargs)
     ax1_right.plot((-d * 2.5, +d * 2.5), (1 - d, 1 + d), **kwargs)
 
-    # Draw a prominent vertical break line and slashes in the center of the gap
+    # Draw a vertical line with a heartbeat/zig-zag in the center of the gap
     gap_x = 1.028  # center of the gap in ax1_left.transAxes coordinates
-    ax1_left.plot([gap_x, gap_x], [0, 1], color='gray', linestyle='--', linewidth=1.5, transform=ax1_left.transAxes, clip_on=False)
-    for y_center in [0.25, 0.50, 0.75]:
-        ax1_left.plot([gap_x - 0.015, gap_x + 0.015], [y_center - 0.02, y_center + 0.02], color='black', linewidth=1.5, transform=ax1_left.transAxes, clip_on=False)
-        ax1_left.plot([gap_x - 0.015, gap_x + 0.015], [y_center - 0.01, y_center + 0.03], color='black', linewidth=1.5, transform=ax1_left.transAxes, clip_on=False)
+    x_coords = [gap_x, gap_x, gap_x - 0.028, gap_x + 0.028, gap_x, gap_x]
+    y_coords = [0.0, 0.49, 0.495, 0.505, 0.51, 1.0]
+    ax1_left.plot(x_coords, y_coords, color='dimgray', linewidth=1.5, transform=ax1_left.transAxes, clip_on=False)
 
     # --- Plot Subplot 2: Task 1 Large ---
     trans2 = mtransforms.blended_transform_factory(ax2.transAxes, ax2.transData)
     ax2.axhline(y=80.0, color="gray", linestyle="--")
-    ax2.text(0.98, 80.0 + 0.15, "Target Recall (80%)", transform=trans2, color="gray",
+    ax2.text(0.98, 80.0 + 0.15, "Target Recall", transform=trans2, color="gray",
              va="bottom", ha="right", fontsize=15, weight='bold')
 
     # Filter and sort points by overall_time to draw a clean connected line
@@ -309,7 +311,7 @@ def main() -> None:
             color="tab:green", edgecolor="black", s=130, zorder=5, marker="D"
         )
 
-    ax2.set_xlabel("Total Time (s)", fontsize=21)
+    ax2.set_xlabel("Total Time [s]", fontsize=21)
     ax2.set_title("Task 1 Large Submission", fontsize=23)
     ax2.tick_params(axis='both', which='major', labelsize=17)
     ax2.grid(True, which="both", linestyle=":", alpha=0.8)
@@ -319,7 +321,7 @@ def main() -> None:
     # No legend on ax2 as requested!
 
     plt.tight_layout()
-    fig.subplots_adjust(hspace=0.28)
+    fig.subplots_adjust(hspace=0.18)
     plt.savefig(plot_path_png, dpi=150)
     plt.savefig(plot_path_pdf)
     plt.close()

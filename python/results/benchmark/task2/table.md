@@ -8,5 +8,3 @@
 | mode10 | Mode 10: FP32 IP Build (d+1) & FP16 IP Search (no FLAS) | eps=0.18, max_dist=8000 | 0.06s | 24.80s | — | 25.10s | 35.50 ms | 81.50% |
 | mode10 | Mode 10: FP32 IP Build (d+1) & FP16 IP Search (+ L2 FLAS) | eps=0.18, max_dist=6000 | 0.06s | 21.20s | 38.70s | 21.50s | 28.90 ms | 80.08% |
 | mode10 | Mode 10: FP32 IP Build (d+1) & FP16 IP Search (+ IP FLAS) | eps=0.18, max_dist=7000 | 0.06s | 21.00s | 38.20s | 21.30s | 32.60 ms | 81.13% |
-| mode5 | Mode 5: FP32 L2 Build (d+1) & FP16 IP Search (+ L2 FLAS) | eps=0.18, max_dist=7000 | 0.06s | 19.00s | 38.40s | 19.30s | 32.10 ms | 80.33% |
-| mode6 | Mode 6: FP32 L2 Build (d+1) & FP16 L2 Search (+ L2 FLAS) | eps=0.007, max_dist=8000 | 0.06s | 18.50s | 38.50s | 18.80s | 32.20 ms | 80.32% |

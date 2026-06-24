@@ -21,8 +21,6 @@ TARGET_MODES = [
     "mode10_no_flas",
     "mode10_flas",
     "mode10_ip_flas",
-    "mode5_flas",
-    "mode6_flas",
 ]
 
 # Mode details mapping
@@ -79,7 +77,7 @@ def main() -> None:
     results_dir = base_dir / "results" / "benchmark" / "task2"
     json_path = results_dir / "results.json"
     table_path = results_dir / "table.md"
-    plot_path = results_dir / "evaluation_recall_vs_time.png"
+    plot_path = results_dir / "evaluation_recall_vs_time_task2.png"
 
     print(f"Reading benchmark results from: {json_path}")
     if not json_path.exists():
@@ -142,11 +140,13 @@ def main() -> None:
     print(f"Successfully wrote summary table to: {table_path}")
 
     # Generate Plot matching original style but filtered
-    plt.figure(figsize=(12, 8), dpi=150)
+    plt.figure(figsize=(12, 7), dpi=150)
     ax = plt.gca()
-
     # Draw Target Recall Baseline (dotted gray line)
-    plt.axhline(y=80.0, color="gray", linestyle=":", linewidth=2.5, label="Target Recall (80%)")
+    plt.axhline(y=80.0, color="gray", linestyle=":", linewidth=2.5)
+    import matplotlib.transforms as transforms
+    trans = transforms.blended_transform_factory(ax.transAxes, ax.transData)
+    plt.text(0.5, 80.2, "Target Recall", color="gray", fontsize=14, va="bottom", ha="center", fontweight="bold", transform=trans)
 
     # Plot curves for target modes
     for name in TARGET_MODES:
@@ -181,8 +181,8 @@ def main() -> None:
             )
 
     # Style axes and grid
-    plt.xlabel("Search Time (ms)", fontsize=20, labelpad=10)
-    plt.ylabel("Recall @ 30 (%)", fontsize=20, labelpad=10)
+    plt.xlabel("Search Time [ms]", fontsize=20, labelpad=10)
+    plt.ylabel("Recall @ 30 [%]", fontsize=20, labelpad=10)
     plt.title("Task 2 Benchmark — Recall @ 30 vs Search Time", fontsize=22, pad=15)
     
     # Grid configuration matching original benchmark style
@@ -205,13 +205,9 @@ def main() -> None:
     base_labels = {
         "mode3": "FP32 IP Build & FP16 IP Search",
         "mode10": "FP32 IP Build (d+1) & FP16 IP Search",
-        "mode5": "FP32 L2 Build (d+1) & FP16 IP Search",
-        "mode6": "FP32 L2 Build (d+1) & FP16 L2 Search",
     }
-    base_handles = [
-        mlines.Line2D([], [], color="gray", linestyle=":", linewidth=2.5, label="Target Recall (80%)")
-    ]
-    legend_order = ["mode3", "mode10", "mode5", "mode6"]
+    base_handles = []
+    legend_order = ["mode3", "mode10"]
     for mode_num in legend_order:
         if mode_num in base_labels:
             color = COLOR_MAP.get(mode_num, "tab:gray")
@@ -232,8 +228,8 @@ def main() -> None:
     style_row = HPacker(pad=5, sep=20, children=list(main_packer.get_children()))
     leg_temp.remove()
 
-    # Add main legend to lower right
-    leg1 = ax.legend(handles=base_handles, loc="lower right", labelspacing=0.8, fontsize=15, handlelength=3.0)
+    # Add main legend to lower center
+    leg1 = ax.legend(handles=base_handles, loc="lower center", labelspacing=0.8, fontsize=15, handlelength=3.0)
     ax.add_artist(leg1)
 
     # Append style_row to the bottom of the main legend's column packer
